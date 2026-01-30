@@ -341,8 +341,19 @@ def agregar_producto_variante():
         return mensaje
 
     # GET
-    cur.execute("SELECT id, nombre FROM producto_base ORDER BY nombre")
+    cur.execute("""
+        SELECT
+            id,
+            nombre || ' (' ||
+            COALESCE(alto::text,'-') || 'x' ||
+            COALESCE(ancho::text,'-') || 'x' ||
+            COALESCE(largo::text,'-') || 'x' ||
+            COALESCE(diametro::text,'-') || ')' AS display_name
+        FROM producto_base
+        ORDER BY nombre
+    """)
     productos = cur.fetchall()
+
 
     cur.execute("SELECT id, nombre FROM proveedor ORDER BY nombre")
     proveedores = cur.fetchall()
