@@ -305,42 +305,56 @@ Proveedor:
 </form>
 '''
 
+from psycopg2 import errors
+
 @app.route('/producto_variante', methods=['GET', 'POST'])
 def agregar_producto_variante():
     conn = get_db_connection()
-
+    
     cur = conn.cursor()
 
     if request.method == 'POST':
-        cur.execute("""
-            INSERT INTO producto_variante
-            (id_producto_base, marca, calidad, precio, precio_compra, stock, ubicacion, id_proveedor)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            request.form['id_producto_base'],
-            request.form['marca'],
-            request.form['calidad'],
-            request.form['precio'],
-            request.form['precio_compra'] or None,
-            request.form['stock'],
-            request.form['ubicacion'],
-            request.form['id_proveedor'] or None
-        ))
-        conn.commit()
+        try:
+            cur.execute("""
+                INSERT INTO producto_variante
+                (id_producto_base, marca, calidad, precio, precio_compra, stock, ubicacion, id_proveedor)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                request.form['id_producto_base'],
+                request.form['marca'],
+                request.form['calidad'],
+                request.form['precio'],
+                request.form['precio_compra'] or None,
+                request.form['stock'],
+                request.form['ubicacion'],
+                request.form['id_proveedor'] or None
+            ))
+            conn.commit()
+            mensaje = 'Producto variante agregado con éxito<br><a href="/producto_variante">Agregar otro</a>'
+        except errors.UniqueViolation:
+            conn.rollback()
+            mensaje = 'Error: ya existe un producto variante con ese Producto Base y Marca.'
+        finally:
+            cur.close()
+            conn.close()
 
-        return 'Producto variante agregado con éxito<br><a href="/producto_variante">Agregar otro</a>'
+        return mensaje
 
+    # GET
     cur.execute("SELECT id, nombre FROM producto_base ORDER BY nombre")
     productos = cur.fetchall()
 
     cur.execute("SELECT id, nombre FROM proveedor ORDER BY nombre")
     proveedores = cur.fetchall()
+    cur.close()
+    conn.close()
 
     return render_template_string(
         HTML_FORM_VARIANTE,
         productos=productos,
         proveedores=proveedores
     )
+
 
 # ------------------ VENTA ------------------------------
 
