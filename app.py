@@ -342,17 +342,31 @@ def agregar_producto_variante():
 
     # GET
     cur.execute("""
-        SELECT
-            id,
-            nombre || ' (' ||
-            COALESCE(alto::text,'-') || 'x' ||
-            COALESCE(ancho::text,'-') || 'x' ||
-            COALESCE(largo::text,'-') || 'x' ||
-            COALESCE(diametro::text,'-') || ')' AS display_name
+        SELECT id,
+            nombre,
+            alto,
+            ancho,
+            largo,
+            diametro
         FROM producto_base
         ORDER BY nombre
     """)
     productos = cur.fetchall()
+
+    # Construimos la lista que se va a mostrar en el select
+    productos_para_select = []
+    for p in productos:
+        id_prod = p[0]
+        nombre = p[1]
+        alto, ancho, largo, diametro = p[2], p[3], p[4], p[5]
+
+        if alto or ancho or largo or diametro:
+            display = f"{nombre} ({alto or ''}x{ancho or ''}x{largo or ''}x{diametro or ''})"
+        else:
+            display = nombre
+
+        productos_para_select.append((id_prod, display))
+
 
 
     cur.execute("SELECT id, nombre FROM proveedor ORDER BY nombre")
@@ -362,7 +376,7 @@ def agregar_producto_variante():
 
     return render_template_string(
         HTML_FORM_VARIANTE,
-        productos=productos,
+        productos=productos_para_select,
         proveedores=proveedores
     )
 
