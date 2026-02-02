@@ -36,14 +36,14 @@ HTML_HOME = '''
             padding: 40px;
         }
         h1 {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
         .section {
             background: #ffffff;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             border-radius: 8px;
-            max-width: 500px;
+            max-width: 520px;
         }
         ul {
             list-style: none;
@@ -64,29 +64,36 @@ HTML_HOME = '''
 </head>
 <body>
 
-    <h1>Sistema de Gestión</h1>
+<h1>Sistema de Gestión</h1>
 
-    <div class="section">
-        <h2>Carga de datos</h2>
-        <ul>
-            <li><a href="/clientes">Clientes</a></li>
-            <li><a href="/proveedores">Proveedores</a></li>
-            <li><a href="/vehiculos">Vehículos</a></li>
-            <li><a href="/ventas">Ventas</a></li>
-        </ul>
-    </div>
+<div class="section">
+    <h2>Carga de datos</h2>
+    <ul>
+        <li><a href="/clientes">Clientes</a></li>
+        <li><a href="/proveedor">Proveedores</a></li>
+        <li><a href="/agregar_vehiculo">Vehículos</a></li>
 
-    <div class="section">
-        <h2>Consultas</h2>
-        <ul>
-            <li><a href="/productos">📦 Ver productos</a></li>
-            <li><a href="/stock-bajo">⚠️ Stock bajo</a></li>
-        </ul>
-    </div>
+        <li><a href="/producto_base">Producto base</a></li>
+        <li><a href="/producto_variante">Producto variante</a></li>
+        <li><a href="/producto_vehiculo">Asociar producto ↔ vehículo</a></li>
+
+        <li><a href="/venta">Registrar venta</a></li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>Consultas</h2>
+    <ul>
+        <li><a href="/ventas">📄 Ventas</a></li>
+        <li><a href="/productos">📦 Productos</a></li>
+        <li><a href="/stock-bajo">⚠️ Stock bajo</a></li>
+    </ul>
+</div>
 
 </body>
 </html>
 '''
+
 
 @app.route('/')
 def home():
