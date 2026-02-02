@@ -662,3 +662,194 @@ def ver_detalle_venta(id_venta):
         venta=venta,
         detalles=detalles
     )
+
+
+# --------------- REPORTE PRODUCTOS --------------
+
+from flask import render_template_string
+
+@app.route("/productos")
+def listar_productos():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            pb.nombre            AS producto,
+            pb.descripcion       AS descripcion,
+            pv.marca             AS marca,
+            pv.calidad           AS calidad,
+            pv.subcodigo         AS subcodigo,
+            pv.precio            AS precio_venta,
+            pv.stock             AS stock,
+            pr.nombre            AS proveedor,
+            pv.ubicacion         AS ubicacion
+        FROM producto_variante pv
+        JOIN producto_base pb
+            ON pb.id = pv.id_producto_base
+        LEFT JOIN proveedor pr
+            ON pr.id = pv.id_proveedor
+        ORDER BY pb.nombre, pv.marca;
+    """)
+
+    productos = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    html = """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Listado de productos</title>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            th, td {
+                border: 1px solid #ccc;
+                padding: 6px;
+                text-align: left;
+            }
+            th {
+                background-color: #eee;
+            }
+        </style>
+    </head>
+    <body>
+
+    <h1>Listado de productos</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Marca</th>
+                <th>Calidad</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Proveedor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in productos %}
+            <tr>
+                <td>{{ p[0] }}</td>
+                <td>{{ p[2] }}</td>
+                <td>{{ p[3] }}</td>
+                <td>${{ p[5] }}</td>
+                <td>{{ p[6] }}</td>
+                <td>{{ p[7] or "-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <br>
+    <a href="/">Volver al inicio</a>
+
+    </body>
+    </html>
+    """
+
+    return render_template_string(html, productos=productos)
+
+
+# ------------ MOSTRAR STOCK BAJO --------------------
+
+from flask import render_template_string
+
+STOCK_MINIMO = 5
+
+@app.route("/stock-bajo")
+def stock_bajo():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            pb.nombre AS producto,
+            pv.marca,
+            pv.calidad,
+            pv.stock,
+            pv.ubicacion
+        FROM producto_variante pv
+        JOIN producto_base pb
+            ON pb.id = pv.id_producto_base
+        WHERE pv.stock <= %s
+        ORDER BY pv.stock ASC, pb.nombre;
+    """, (STOCK_MINIMO,))
+
+    productos = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    html = """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Stock bajo</title>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            th, td {
+                border: 1px solid #ccc;
+                padding: 6px;
+            }
+            th {
+                background-color: #f2dede;
+            }
+            .critico {
+                background-color: #f8d7da;
+            }
+        </style>
+    </head>
+    <body>
+
+    <h1>Productos con stock bajo (≤ {{ stock_minimo }})</h1>
+
+    {% if productos %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Marca</th>
+                    <th>Calidad</th>
+                    <th>Stock</th>
+                    <th>Ubicación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in productos %}
+                <tr class="critico">
+                    <td>{{ p[0] }}</td>
+                    <td>{{ p[1] }}</td>
+                    <td>{{ p[2] or "-" }}</td>
+                    <td><strong>{{ p[3] }}</strong></td>
+                    <td>{{ p[4] or "-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay productos con stock bajo 🎉</p>
+    {% endif %}
+
+    <br>
+    <a href="/">Volver al inicio</a>
+
+    </body>
+    </html>
+    """
+
+    return render_template_string(
+        html,
+        productos=productos,
+        stock_minimo=STOCK_MINIMO
+    )
