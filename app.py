@@ -87,6 +87,8 @@ HTML_HOME = '''
         <li><a href="/ventas">📄 Ventas</a></li>
         <li><a href="/productos">📦 Productos</a></li>
         <li><a href="/stock-bajo">⚠️ Stock bajo</a></li>
+        <li><a href="/productos-mas-vendidos">🔥 Productos más vendidos</a></li>
+
     </ul>
 </div>
 
@@ -910,3 +912,82 @@ def stock_bajo():
         productos=productos,
         stock_minimo=STOCK_MINIMO
     )
+
+
+# ------------------- PRODUCTOS MÁS VENDIDOS ---------------
+
+@app.route("/productos-mas-vendidos")
+def productos_mas_vendidos():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            pb.nombre || ' - ' || pv.marca AS producto,
+            SUM(vd.cantidad) AS cantidad_vendida,
+            SUM(vd.cantidad * vd.precio_unitario) AS total_facturado
+        FROM venta_detalle vd
+        JOIN producto_variante pv ON pv.id = vd.id_producto_variante
+        JOIN producto_base pb ON pb.id = pv.id_producto_base
+        GROUP BY pb.nombre, pv.marca
+        ORDER BY cantidad_vendida DESC
+        LIMIT 10;
+    """)
+
+    productos = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    html = """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Productos más vendidos</title>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            th, td {
+                border: 1px solid #ccc;
+                padding: 6px;
+                text-align: left;
+            }
+            th {
+                background-color: #e8f0fe;
+            }
+        </style>
+    </head>
+    <body>
+
+    <h1>Top 10 productos más vendidos</h1>
+
+    {% if productos %}
+    <table>
+        <tr>
+            <th>Producto</th>
+            <th>Cantidad vendida</th>
+            <th>Total facturado</th>
+        </tr>
+        {% for p in productos %}
+        <tr>
+            <td>{{ p[0] }}</td>
+            <td>{{ p[1] }}</td>
+            <td>${{ p[2] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>Todavía no hay ventas registradas.</p>
+    {% endif %}
+
+    <br>
+    <a href="/">Volver al inicio</a>
+
+    </body>
+    </html>
+    """
+
+    return render_template_string(html, productos=productos)
