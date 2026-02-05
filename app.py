@@ -9,6 +9,10 @@ import os
 
 app = Flask(__name__)
 
+@app.route("/test")
+def test():
+    return "FLASK FUNCIONA"
+
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
     return psycopg2.connect(database_url, sslmode="require")
@@ -284,6 +288,23 @@ def asociar_producto_vehiculo():
     cur.execute("SELECT id, marca, modelo, motor FROM vehiculo ORDER BY marca, modelo")
     vehiculos = cur.fetchall()
 
+     # 🔴 CASOS SIN DATOS
+    if not productos:
+        return '''
+        <h2>No hay productos base cargados</h2>
+        <p>Primero tenés que cargar al menos un producto base.</p>
+        <a href="/producto_base">Cargar producto base</a><br>
+        <a href="/">Volver</a>
+        '''
+
+    if not vehiculos:
+        return '''
+        <h2>No hay vehículos cargados</h2>
+        <p>Primero tenés que cargar vehículos.</p>
+        <a href="/vehiculos">Cargar vehículos</a><br>
+        <a href="/">Volver</a>
+        '''
+
     return render_template_string(
         HTML_FORM_PRODUCTO_VEHICULO,
         productos=productos,
@@ -412,6 +433,17 @@ def agregar_producto_variante():
     """)
     productos = cur.fetchall()
 
+     # 🔴 SI NO HAY PRODUCTOS BASE
+    if not productos:
+        cur.close()
+        conn.close()
+        return '''
+        <h2>No hay productos base cargados</h2>
+        <p>Primero tenés que crear un producto base.</p>
+        <a href="/producto_base">Cargar producto base</a><br>
+        <a href="/">Volver</a>
+        '''
+
     # Construimos la lista que se va a mostrar en el select
     productos_para_select = []
     for p in productos:
@@ -493,16 +525,11 @@ Cantidad: <input type="number" name="cantidad_3" min="1">
 @app.route('/venta', methods=['GET', 'POST'])
 def agregar_venta():
     conn = get_db_connection()
-
     cur = conn.cursor()
 
     if request.method == 'POST':
-        id_cliente = request.form['id_cliente']
+        id_cliente = request.form['id_cliente'] or None
 
-        if id_cliente == "":
-            id_cliente = None
-
-        # 1) Crear venta vacía
         cur.execute(
             "INSERT INTO venta (id_cliente, total) VALUES (%s, 0) RETURNING id",
             (id_cliente,)
@@ -510,8 +537,8 @@ def agregar_venta():
         id_venta = cur.fetchone()[0]
 
         total = 0
+        hay_productos = False
 
-        # 2) Procesar las 3 líneas
         for i in [1, 2, 3]:
             producto = request.form.get(f'producto_{i}')
             cantidad = request.form.get(f'cantidad_{i}')
@@ -521,7 +548,12 @@ def agregar_venta():
                     "SELECT precio FROM producto_variante WHERE id = %s",
                     (producto,)
                 )
-                precio_unitario = cur.fetchone()[0]
+                row = cur.fetchone()
+
+                if not row:
+                    continue  # producto inválido, lo salteamos
+
+                precio_unitario = row[0]
 
                 cur.execute("""
                     INSERT INTO venta_detalle
@@ -530,8 +562,17 @@ def agregar_venta():
                 """, (id_venta, producto, cantidad, precio_unitario))
 
                 total += precio_unitario * int(cantidad)
+                hay_productos = True
 
-        # 3) Actualizar total
+        if not hay_productos:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return '''
+            <h3>No se puede registrar una venta sin productos</h3>
+            <a href="/venta">Volver</a>
+            '''
+
         cur.execute(
             "UPDATE venta SET total = %s WHERE id = %s",
             (total, id_venta)
@@ -543,7 +584,8 @@ def agregar_venta():
 
         return f"Venta registrada correctamente. Total: ${total}"
 
-    # GET
+    # -------- GET --------
+
     cur.execute("SELECT id, nombre FROM cliente ORDER BY nombre")
     clientes = cur.fetchall()
 
@@ -555,6 +597,20 @@ def agregar_venta():
     """)
     productos = cur.fetchall()
 
+    if not productos:
+        cur.close()
+        conn.close()
+        return '''
+        <h2>No hay productos para vender</h2>
+        <p>Primero cargá productos y sus variantes.</p>
+        <a href="/producto_base">Cargar producto base</a><br>
+        <a href="/producto_variante">Cargar producto variante</a><br>
+        <a href="/">Volver</a>
+        '''
+
+    cur.close()
+    conn.close()
+
     return render_template_string(
         HTML_FORM_VENTA,
         clientes=clientes,
@@ -562,18 +618,20 @@ def agregar_venta():
     )
 
 
+
 # ----------------- LISTADO VENTA ------------------
 
 HTML_LISTADO_VENTAS = '''
 <h2>Ventas</h2>
 
+{% if ventas %}
 <table border="1" cellpadding="5">
 <tr>
   <th>ID</th>
   <th>Fecha</th>
   <th>Cliente</th>
   <th>Total</th>
-  <th>Acción</th>
+  <th>Acciones</th>
 </tr>
 
 {% for v in ventas %}
@@ -586,16 +644,20 @@ HTML_LISTADO_VENTAS = '''
 </tr>
 {% endfor %}
 </table>
+{% else %}
+<p>No hay ventas registradas.</p>
+<a href="/venta">Registrar una venta</a>
+{% endif %}
 
-<br>
+<br><br>
 <a href="/">Volver al inicio</a>
 '''
+
 
 
 @app.route('/ventas')
 def listar_ventas_app():
     conn = get_db_connection()
-
     cur = conn.cursor()
 
     cur.execute("""
@@ -609,15 +671,14 @@ def listar_ventas_app():
         ORDER BY v.fecha DESC
     """)
 
-    ventas = [
-        {
+    ventas = []
+    for r in cur.fetchall():
+        ventas.append({
             "id": r[0],
-            "fecha": r[1],
+            "fecha": r[1].strftime("%d/%m/%Y %H:%M"),
             "cliente": r[2],
             "total": r[3]
-        }
-        for r in cur.fetchall()
-    ]
+        })
 
     cur.close()
     conn.close()
@@ -626,6 +687,7 @@ def listar_ventas_app():
         HTML_LISTADO_VENTAS,
         ventas=ventas
     )
+
 
 # ------------------- DETALLE VENTA ---------------------
 
@@ -775,6 +837,10 @@ def listar_productos():
             th {
                 background-color: #eee;
             }
+            .stock-bajo {
+                background-color: #ffe5e5;
+            }
+
         </style>
     </head>
     <body>
@@ -793,17 +859,24 @@ def listar_productos():
             </tr>
         </thead>
         <tbody>
-            {% for p in productos %}
-            <tr>
-                <td>{{ p[0] }}</td>
-                <td>{{ p[2] }}</td>
-                <td>{{ p[3] }}</td>
-                <td>${{ p[5] }}</td>
-                <td>{{ p[6] }}</td>
-                <td>{{ p[7] or "-" }}</td>
-            </tr>
-            {% endfor %}
+            {% if productos %}
+                {% for p in productos %}
+                <tr class="{{ 'stock-bajo' if p[6] <= 5 else '' }}">
+                    <td>{{ p[0] }}</td>
+                    <td>{{ p[2] }}</td>
+                    <td>{{ p[3] or "-" }}</td>
+                    <td>${{ p[5] }}</td>
+                    <td>{{ p[6] }}</td>
+                    <td>{{ p[7] or "-" }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6">No hay productos cargados.</td>
+                </tr>
+            {% endif %}
         </tbody>
+
     </table>
 
     <br>
@@ -829,13 +902,13 @@ def stock_bajo():
 
     cur.execute("""
         SELECT
-            pb.nombre AS producto,
+            COALESCE (pb.nombre, 'producto sin base') AS producto,
             pv.marca,
             pv.calidad,
             pv.stock,
             pv.ubicacion
         FROM producto_variante pv
-        JOIN producto_base pb
+        LEFT JOIN producto_base pb
             ON pb.id = pv.id_producto_base
         WHERE pv.stock <= %s
         ORDER BY pv.stock ASC, pb.nombre;
@@ -886,7 +959,7 @@ def stock_bajo():
             </thead>
             <tbody>
                 {% for p in productos %}
-                <tr class="critico">
+                <tr class="{{ 'critico' if p[3] <= stock_minimo else '' }}">
                     <td>{{ p[0] }}</td>
                     <td>{{ p[1] }}</td>
                     <td>{{ p[2] or "-" }}</td>
@@ -923,13 +996,16 @@ def productos_mas_vendidos():
 
     cur.execute("""
         SELECT
-            pb.nombre || ' - ' || pv.marca AS producto,
-            SUM(vd.cantidad) AS cantidad_vendida,
-            SUM(vd.cantidad * vd.precio_unitario) AS total_facturado
+            COALESCE(pb.nombre, 'Producto sin base') || ' - ' ||
+            COALESCE(pv.marca, 'Sin marca')           AS producto,
+            SUM(vd.cantidad)                          AS cantidad_vendida,
+            SUM(vd.cantidad * vd.precio_unitario)    AS total_facturado
         FROM venta_detalle vd
-        JOIN producto_variante pv ON pv.id = vd.id_producto_variante
-        JOIN producto_base pb ON pb.id = pv.id_producto_base
-        GROUP BY pb.nombre, pv.marca
+        LEFT JOIN producto_variante pv
+            ON pv.id = vd.id_producto_variante
+        LEFT JOIN producto_base pb
+            ON pb.id = pv.id_producto_base
+        GROUP BY producto
         ORDER BY cantidad_vendida DESC
         LIMIT 10;
     """)
@@ -991,3 +1067,23 @@ def productos_mas_vendidos():
     """
 
     return render_template_string(html, productos=productos)
+
+#---- PRUEBA, BORRAR DSP --------
+
+@app.route("/test-db")
+def test_db():
+    try:
+        conn = get_db_connection()
+        conn.close()
+        return "Conexión a la base OK"
+    except Exception as e:
+        return f"Error de conexión: {e}"
+
+
+
+
+# --------------------
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
