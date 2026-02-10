@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Cliente</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    
+    <div class="container">
+        <h2>Agregar Cliente</h2>
+        
+        <!-- Mensaje de éxito/error -->
+        <div id="mensaje" class="mensaje {% if mensaje_exito %}exito show{% endif %}">
+            {{ mensaje_exito }}
+        </div>
+        
+        <!-- Formulario -->
+        <form id="formCliente" method="POST">
+            <div class="form-group">
+                <label for="nombre">Nombre del cliente:</label>
+                <input type="text" 
+                       id="nombre" 
+                       name="nombre" 
+                       placeholder="Ingresá el nombre del cliente"
+                       autocomplete="off">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Agregar Cliente</button>
+        </form>
+        
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/clientes.js') }}"></script>
+    
+</body>
+</html>

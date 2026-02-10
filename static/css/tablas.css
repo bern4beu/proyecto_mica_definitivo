@@ -1,0 +1,317 @@
+/* Estilos para tablas modernas */
+
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header-section h2 {
+    margin: 0;
+}
+
+/* Buscador */
+.search-box {
+    margin-bottom: 20px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+/* Contenedor de tabla con scroll horizontal en móvil */
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+/* Tabla moderna */
+.tabla-moderna {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.tabla-moderna thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.tabla-moderna th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+.tabla-moderna tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.tabla-moderna tbody tr:hover {
+    background-color: #f8f9ff;
+}
+
+.tabla-moderna td {
+    padding: 15px;
+    color: #333;
+}
+
+/* Monto destacado */
+.monto {
+    font-weight: bold;
+    color: #4CAF50;
+    font-size: 16px;
+}
+
+/* Botón detalle en tabla */
+.btn-detalle {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #2196F3;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn-detalle:hover {
+    background: #1976D2;
+}
+
+/* Sin resultados */
+.sin-resultados {
+    text-align: center;
+    padding: 40px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    color: #856404;
+    margin-bottom: 20px;
+}
+
+/* Mensaje vacío */
+.mensaje-vacio {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 2px dashed #ddd;
+}
+
+.mensaje-vacio p {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/* Responsive: En móvil mostrar como cards */
+@media (max-width: 768px) {
+    .tabla-moderna thead {
+        display: none;
+    }
+    
+    .tabla-moderna tbody tr {
+        display: block;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    
+    .tabla-moderna td {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .tabla-moderna td:last-child {
+        border-bottom: none;
+    }
+    
+    .tabla-moderna td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: #667eea;
+    }
+}
+
+
+/* Badge de alerta */
+.badge-alerta {
+    background: #ff9800;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Badges de stock */
+.badge-stock {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.badge-critico {
+    background: #f44336;
+    color: white;
+}
+
+.badge-muy-bajo {
+    background: #ff9800;
+    color: white;
+}
+
+.badge-bajo {
+    background: #ffc107;
+    color: #333;
+}
+
+/* Resaltar filas según stock */
+.stock-critico {
+    background-color: #ffebee !important;
+}
+
+.stock-muy-bajo {
+    background-color: #fff3e0 !important;
+}
+
+/* Mensaje de éxito alternativo */
+.mensaje-exito-alt {
+    background: #e8f5e9;
+    border: 2px solid #4CAF50;
+}
+
+.mensaje-exito-alt p:first-child {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+/* Filtros */
+.filtros-container {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+}
+
+.filtros-container label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: normal;
+    margin: 0;
+}
+
+.filtros-container input[type="checkbox"] {
+    width: auto;
+    cursor: pointer;
+}
+
+/* Resaltar filas con stock bajo */
+.stock-bajo-row {
+    background-color: #fff9e6;
+}
+
+/* Badge de stock simple */
+.badge-stock-simple {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.badge-stock-simple.critico {
+    background: #f44336;
+    color: white;
+}
+
+.badge-stock-simple.muy-bajo {
+    background: #ff9800;
+    color: white;
+}
+
+.badge-stock-simple.bajo {
+    background: #ffc107;
+    color: #333;
+}
+
+.badge-stock-simple.ok {
+    background: #4CAF50;
+    color: white;
+}
+
+/* Precio */
+.precio {
+    font-weight: 600;
+    color: #2196F3;
+}
+
+/* Resumen de productos */
+.resumen-productos {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.resumen-productos p {
+    margin: 0;
+    color: #555;
+}
+
+.resumen-productos span {
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* Responsive para header con múltiples botones */
+@media (max-width: 768px) {
+    .header-section {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .header-section > div {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .header-section .btn {
+        width: 100%;
+    }
+    
+    .resumen-productos {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

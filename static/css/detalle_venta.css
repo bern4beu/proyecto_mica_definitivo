@@ -1,0 +1,216 @@
+/* Estilos para detalle de venta / factura */
+
+.factura-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #667eea;
+}
+
+.factura-header h2 {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-size: 28px;
+}
+
+.fecha {
+    color: #666;
+    font-size: 16px;
+    margin: 0;
+}
+
+.acciones-header {
+    display: flex;
+    gap: 10px;
+}
+
+/* Tarjeta de información */
+.info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    color: white;
+}
+
+.info-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+.cliente-nombre {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* Sección de productos */
+.productos-section {
+    margin-bottom: 30px;
+}
+
+.productos-section h3 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 20px;
+}
+
+/* Tabla de detalle */
+.tabla-detalle {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.tabla-detalle thead {
+    background: #f8f9fa;
+}
+
+.tabla-detalle th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #555;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tabla-detalle tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.tabla-detalle tbody tr:last-child {
+    border-bottom: none;
+}
+
+.tabla-detalle td {
+    padding: 15px;
+    color: #333;
+}
+
+/* Alineaciones de texto */
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+/* Cantidad destacada */
+.cantidad {
+    font-weight: bold;
+    color: #667eea;
+    font-size: 16px;
+}
+
+/* Subtotal destacado */
+.subtotal {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+/* Total de la factura */
+.total-factura {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border: 2px solid #e0e0e0;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-row span:first-child {
+    font-size: 18px;
+    font-weight: 600;
+    color: #555;
+    letter-spacing: 1px;
+}
+
+.total-monto {
+    font-size: 32px;
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+/* Acciones del footer */
+.acciones-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .factura-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .acciones-header {
+        width: 100%;
+    }
+    
+    .acciones-header .btn {
+        flex: 1;
+    }
+    
+    .tabla-detalle thead {
+        display: none;
+    }
+    
+    .tabla-detalle tbody tr {
+        display: block;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    
+    .tabla-detalle td {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .tabla-detalle td:last-child {
+        border-bottom: none;
+    }
+    
+    .tabla-detalle td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .total-row {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .acciones-footer {
+        flex-direction: column;
+    }
+    
+    .acciones-footer .btn {
+        width: 100%;
+        text-align: center;
+    }
+}

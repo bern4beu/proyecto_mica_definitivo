@@ -3,9 +3,12 @@
 # Stock se descuenta y total se calcula automáticamente.
 
 
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, render_template, jsonify
 import psycopg2
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -16,6 +19,25 @@ def test():
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
     return psycopg2.connect(database_url, sslmode="require")
+
+def formatear_producto_con_dimensiones(producto_tuple):
+    """
+    Recibe una tupla (id, nombre, alto, ancho, largo, diametro)
+    y devuelve (id, nombre_formateado)
+    """
+    id_prod = producto_tuple[0]
+    nombre = producto_tuple[1]
+    alto = producto_tuple[2]
+    ancho = producto_tuple[3]
+    largo = producto_tuple[4]
+    diametro = producto_tuple[5]
+    
+    if alto or ancho or largo or diametro:
+        display = f"{nombre} ({alto or ''}x{ancho or ''}x{largo or ''}x{diametro or ''})"
+    else:
+        display = nombre
+    
+    return (id_prod, display)
 
 
 @app.route("/health")
@@ -121,18 +143,20 @@ HTML_FORM_CLIENTE = '''
 def agregar_cliente():
     if request.method == 'POST':
         nombre = request.form['nombre']
-
+        
         conn = get_db_connection()
-
         cur = conn.cursor()
         cur.execute("INSERT INTO cliente (nombre) VALUES (%s)", (nombre,))
         conn.commit()
         cur.close()
         conn.close()
-
-        return f'Cliente "{nombre}" agregado con éxito!<br><a href="/">Volver</a>'
-
-    return render_template_string(HTML_FORM_CLIENTE)
+        
+        # Renderizar el mismo template pero con mensaje de éxito
+        return render_template('clientes.html', 
+                             mensaje_exito=f'Cliente "{nombre}" agregado con éxito!')
+    
+    # GET: mostrar el formulario
+    return render_template('clientes.html')
 
 
 # ---------- VEHICULOS ----------
@@ -157,29 +181,31 @@ def agregar_vehiculo():
         marca = request.form["marca"]
         modelo = request.form["modelo"]
         motor = request.form["motor"] or None
-
+        
         conn = get_db_connection()
-
         cur = conn.cursor()
-
+        
         try:
             cur.execute("""
                 INSERT INTO vehiculo (marca, modelo, motor)
                 VALUES (%s, %s, %s)
             """, (marca, modelo, motor))
             conn.commit()
-
+            mensaje_exito = f'Vehículo {marca} {modelo} agregado con éxito!'
+        
         except Exception as e:
             conn.rollback()
-            return f"Error al guardar vehículo: {e}"
-
+            mensaje_exito = None
+            mensaje_error = f"Error al guardar vehículo: {e}"
+        
         finally:
             cur.close()
             conn.close()
-
-        return 'Vehículo agregado con éxito<br><a href="/agregar_vehiculo">Agregar otro</a>'
-
-    return render_template_string(HTML_FORM_VEHICULO)
+        
+        return render_template('vehiculo.html', 
+                             mensaje_exito=mensaje_exito)
+    
+    return render_template('vehiculo.html')
 
 
 # ---------- PRODUCTO BASE ----------
@@ -205,14 +231,13 @@ def agregar_producto_base():
     if request.method == 'POST':
         nombre = request.form['nombre']
         descripcion = request.form['descripcion']
-
+        
         alto = to_numeric_or_none(request.form['alto'])
         ancho = to_numeric_or_none(request.form['ancho'])
         largo = to_numeric_or_none(request.form['largo'])
         diametro = to_numeric_or_none(request.form['diametro'])
-
+        
         conn = get_db_connection()
-
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO producto_base
@@ -222,10 +247,11 @@ def agregar_producto_base():
         conn.commit()
         cur.close()
         conn.close()
-
-        return f'Producto base "{nombre}" agregado con éxito!<br><a href="/producto_base">Agregar otro</a>'
-
-    return render_template_string(HTML_FORM_BASE)
+        
+        return render_template('producto_base.html',
+                             mensaje_exito=f'Producto base "{nombre}" agregado con éxito!')
+    
+    return render_template('producto_base.html')
 
 
 # --------- PRODUCTO BASE ↔ VEHICULO ----------
@@ -264,7 +290,6 @@ Vehículos (podés seleccionar varios):
 @app.route('/producto_vehiculo', methods=['GET', 'POST'])
 def asociar_producto_vehiculo():
     conn = get_db_connection()
-
     cur = conn.cursor()
 
     if request.method == 'POST':
@@ -279,37 +304,46 @@ def asociar_producto_vehiculo():
             """, (id_producto_base, id_vehiculo))
 
         conn.commit()
+        
+        cantidad = len(ids_vehiculos)
+        mensaje = f'{cantidad} vehículo(s) asociado(s) correctamente!'
+        
+        # Recargar datos
+        cur.execute("""
+            SELECT id, nombre, alto, ancho, largo, diametro 
+            FROM producto_base 
+            ORDER BY nombre
+        """)
+        productos = [formatear_producto_con_dimensiones(p) for p in cur.fetchall()]
+        
+        cur.execute("SELECT id, marca, modelo, motor FROM vehiculo ORDER BY marca, modelo")
+        vehiculos = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        return render_template('producto_vehiculo.html',
+                             productos=productos,
+                             vehiculos=vehiculos,
+                             mensaje_exito=mensaje)
 
-        return 'Vehículos asociados correctamente<br><a href="/producto_vehiculo">Asociar otro</a>'
-
-    cur.execute("SELECT id, nombre FROM producto_base ORDER BY nombre")
-    productos = cur.fetchall()
+    # GET
+    cur.execute("""
+        SELECT id, nombre, alto, ancho, largo, diametro 
+        FROM producto_base 
+        ORDER BY nombre
+    """)
+    productos = [formatear_producto_con_dimensiones(p) for p in cur.fetchall()]
 
     cur.execute("SELECT id, marca, modelo, motor FROM vehiculo ORDER BY marca, modelo")
     vehiculos = cur.fetchall()
+    
+    cur.close()
+    conn.close()
 
-     # 🔴 CASOS SIN DATOS
-    if not productos:
-        return '''
-        <h2>No hay productos base cargados</h2>
-        <p>Primero tenés que cargar al menos un producto base.</p>
-        <a href="/producto_base">Cargar producto base</a><br>
-        <a href="/">Volver</a>
-        '''
-
-    if not vehiculos:
-        return '''
-        <h2>No hay vehículos cargados</h2>
-        <p>Primero tenés que cargar vehículos.</p>
-        <a href="/vehiculos">Cargar vehículos</a><br>
-        <a href="/">Volver</a>
-        '''
-
-    return render_template_string(
-        HTML_FORM_PRODUCTO_VEHICULO,
-        productos=productos,
-        vehiculos=vehiculos
-    )
+    return render_template('producto_vehiculo.html',
+                         productos=productos,
+                         vehiculos=vehiculos)
 
 
 
@@ -330,9 +364,8 @@ HTML_FORM_PROVEEDOR = '''
 def agregar_proveedor():
     if request.method == 'POST':
         nombre = request.form['nombre']
-
+        
         conn = get_db_connection()
-
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO proveedor (nombre) VALUES (%s)",
@@ -341,10 +374,11 @@ def agregar_proveedor():
         conn.commit()
         cur.close()
         conn.close()
-
-        return f'Proveedor "{nombre}" agregado con éxito<br><a href="/proveedor">Agregar otro</a>'
-
-    return render_template_string(HTML_FORM_PROVEEDOR)
+        
+        return render_template('proveedor.html', 
+                             mensaje_exito=f'Proveedor "{nombre}" agregado con éxito!')
+    
+    return render_template('proveedor.html')
 
 
 # ---------- PRODUCTO VARIANTE ----------
@@ -390,10 +424,12 @@ from psycopg2 import errors
 @app.route('/producto_variante', methods=['GET', 'POST'])
 def agregar_producto_variante():
     conn = get_db_connection()
-    
     cur = conn.cursor()
 
     if request.method == 'POST':
+        mensaje_exito = None
+        mensaje_error = None
+        
         try:
             cur.execute("""
                 INSERT INTO producto_variante
@@ -410,41 +446,61 @@ def agregar_producto_variante():
                 request.form['id_proveedor'] or None
             ))
             conn.commit()
-            mensaje = 'Producto variante agregado con éxito<br><a href="/producto_variante">Agregar otro</a>'
+            mensaje_exito = f'Producto variante "{request.form["marca"]}" agregado con éxito!'
+            
         except errors.UniqueViolation:
             conn.rollback()
-            mensaje = 'Error: ya existe un producto variante con ese Producto Base y Marca.'
-        finally:
-            cur.close()
-            conn.close()
-
-        return mensaje
+            mensaje_error = 'Error: ya existe un producto variante con ese Producto Base y Marca.'
+        
+        # Recargar datos para mostrar el formulario de nuevo
+        cur.execute("""
+            SELECT id, nombre, alto, ancho, largo, diametro
+            FROM producto_base
+            ORDER BY nombre
+        """)
+        productos = cur.fetchall()
+        
+        productos_para_select = []
+        for p in productos:
+            id_prod = p[0]
+            nombre = p[1]
+            alto, ancho, largo, diametro = p[2], p[3], p[4], p[5]
+            
+            if alto or ancho or largo or diametro:
+                display = f"{nombre} ({alto or ''}x{ancho or ''}x{largo or ''}x{diametro or ''})"
+            else:
+                display = nombre
+            
+            productos_para_select.append((id_prod, display))
+        
+        cur.execute("SELECT id, nombre FROM proveedor ORDER BY nombre")
+        proveedores = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return render_template('producto_variante.html',
+                             productos=productos_para_select,
+                             proveedores=proveedores,
+                             mensaje_exito=mensaje_exito,
+                             mensaje_error=mensaje_error)
 
     # GET
     cur.execute("""
-        SELECT id,
-            nombre,
-            alto,
-            ancho,
-            largo,
-            diametro
+        SELECT id, nombre, alto, ancho, largo, diametro
         FROM producto_base
         ORDER BY nombre
     """)
     productos = cur.fetchall()
 
-     # 🔴 SI NO HAY PRODUCTOS BASE
+    # SI NO HAY PRODUCTOS BASE
     if not productos:
         cur.close()
         conn.close()
-        return '''
-        <h2>No hay productos base cargados</h2>
-        <p>Primero tenés que crear un producto base.</p>
-        <a href="/producto_base">Cargar producto base</a><br>
-        <a href="/">Volver</a>
-        '''
+        return render_template('producto_variante.html',
+                             productos=None,
+                             proveedores=None)
 
-    # Construimos la lista que se va a mostrar en el select
+    # Construir lista para el select
     productos_para_select = []
     for p in productos:
         id_prod = p[0]
@@ -458,19 +514,14 @@ def agregar_producto_variante():
 
         productos_para_select.append((id_prod, display))
 
-
-
     cur.execute("SELECT id, nombre FROM proveedor ORDER BY nombre")
     proveedores = cur.fetchall()
     cur.close()
     conn.close()
 
-    return render_template_string(
-        HTML_FORM_VARIANTE,
-        productos=productos_para_select,
-        proveedores=proveedores
-    )
-
+    return render_template('producto_variante.html',
+                         productos=productos_para_select,
+                         proveedores=proveedores)
 
 # ------------------ VENTA ------------------------------
 
@@ -539,14 +590,25 @@ def agregar_venta():
         total = 0
         hay_productos = False
 
-        for i in [1, 2, 3]:
-            producto = request.form.get(f'producto_{i}')
-            cantidad = request.form.get(f'cantidad_{i}')
+        # Obtener todos los productos enviados (dinámicamente)
+        productos_enviados = {}
+        for key in request.form.keys():
+            if key.startswith('producto_'):
+                index = key.split('_')[1]
+                productos_enviados[index] = {
+                    'producto': request.form.get(f'producto_{index}'),
+                    'cantidad': request.form.get(f'cantidad_{index}')
+                }
 
-            if producto and cantidad:
+        # Procesar cada producto
+        for index, datos in productos_enviados.items():
+            id_producto = datos['producto']
+            cantidad = datos['cantidad']
+
+            if id_producto and cantidad:
                 cur.execute(
                     "SELECT precio FROM producto_variante WHERE id = %s",
-                    (producto,)
+                    (id_producto,)
                 )
                 row = cur.fetchone()
 
@@ -559,7 +621,7 @@ def agregar_venta():
                     INSERT INTO venta_detalle
                     (id_venta, id_producto_variante, cantidad, precio_unitario)
                     VALUES (%s, %s, %s, %s)
-                """, (id_venta, producto, cantidad, precio_unitario))
+                """, (id_venta, id_producto, cantidad, precio_unitario))
 
                 total += precio_unitario * int(cantidad)
                 hay_productos = True
@@ -568,10 +630,49 @@ def agregar_venta():
             conn.rollback()
             cur.close()
             conn.close()
-            return '''
-            <h3>No se puede registrar una venta sin productos</h3>
-            <a href="/venta">Volver</a>
-            '''
+            
+            # Recargar datos para mostrar el formulario de nuevo
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            cur.execute("SELECT id, nombre FROM cliente ORDER BY nombre")
+            clientes = cur.fetchall()
+            
+            cur.execute("""
+                SELECT 
+                    pv.id, 
+                    pb.nombre,
+                    pv.marca,
+                    pb.alto,
+                    pb.ancho,
+                    pb.largo,
+                    pb.diametro
+                FROM producto_variante pv
+                JOIN producto_base pb ON pb.id = pv.id_producto_base
+                ORDER BY pb.nombre, pv.marca
+            """)
+            
+            productos = []
+            for p in cur.fetchall():
+                id_var = p[0]
+                nombre = p[1]
+                marca = p[2]
+                alto, ancho, largo, diametro = p[3], p[4], p[5], p[6]
+                
+                if alto or ancho or largo or diametro:
+                    display = f"{nombre} ({alto or ''}x{ancho or ''}x{largo or ''}x{diametro or ''}) - {marca}"
+                else:
+                    display = f"{nombre} - {marca}"
+                
+                productos.append((id_var, display))
+            
+            cur.close()
+            conn.close()
+            
+            return render_template('venta.html',
+                                 clientes=clientes,
+                                 productos=productos,
+                                 mensaje_error='No se puede registrar una venta sin productos')
 
         cur.execute(
             "UPDATE venta SET total = %s WHERE id = %s",
@@ -582,7 +683,21 @@ def agregar_venta():
         cur.close()
         conn.close()
 
-        return f"Venta registrada correctamente. Total: ${total}"
+        # Redirigir a la página de ventas con mensaje de éxito
+        return f'''
+        <div style="font-family: Arial; padding: 40px; text-align: center;">
+            <div style="background: #d4edda; color: #155724; padding: 20px; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+                <h2>✓ Venta registrada correctamente</h2>
+                <p style="font-size: 24px; margin: 20px 0;">Total: <strong>${total}</strong></p>
+            </div>
+            <br>
+            <a href="/venta" style="background: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Registrar otra venta</a>
+            <br><br>
+            <a href="/ventas" style="background: #2196F3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Ver todas las ventas</a>
+            <br><br>
+            <a href="/" style="color: #666; text-decoration: none;">Volver al inicio</a>
+        </div>
+        '''
 
     # -------- GET --------
 
@@ -590,32 +705,46 @@ def agregar_venta():
     clientes = cur.fetchall()
 
     cur.execute("""
-        SELECT pv.id, pb.nombre || ' - ' || pv.marca
+        SELECT 
+            pv.id, 
+            pb.nombre,
+            pv.marca,
+            pb.alto,
+            pb.ancho,
+            pb.largo,
+            pb.diametro
         FROM producto_variante pv
         JOIN producto_base pb ON pb.id = pv.id_producto_base
-        ORDER BY pb.nombre
+        ORDER BY pb.nombre, pv.marca
     """)
-    productos = cur.fetchall()
+
+    productos = []
+    for p in cur.fetchall():
+        id_var = p[0]
+        nombre = p[1]
+        marca = p[2]
+        alto, ancho, largo, diametro = p[3], p[4], p[5], p[6]
+        
+        if alto or ancho or largo or diametro:
+            display = f"{nombre} ({alto or ''}x{ancho or ''}x{largo or ''}x{diametro or ''}) - {marca}"
+        else:
+            display = f"{nombre} - {marca}"
+        
+        productos.append((id_var, display))
 
     if not productos:
         cur.close()
         conn.close()
-        return '''
-        <h2>No hay productos para vender</h2>
-        <p>Primero cargá productos y sus variantes.</p>
-        <a href="/producto_base">Cargar producto base</a><br>
-        <a href="/producto_variante">Cargar producto variante</a><br>
-        <a href="/">Volver</a>
-        '''
+        return render_template('venta.html',
+                             clientes=None,
+                             productos=None)
 
     cur.close()
     conn.close()
 
-    return render_template_string(
-        HTML_FORM_VENTA,
-        clientes=clientes,
-        productos=productos
-    )
+    return render_template('venta.html',
+                         clientes=clientes,
+                         productos=productos)
 
 
 
@@ -677,16 +806,13 @@ def listar_ventas_app():
             "id": r[0],
             "fecha": r[1].strftime("%d/%m/%Y %H:%M"),
             "cliente": r[2],
-            "total": r[3]
+            "total": f"{r[3]:.2f}"
         })
 
     cur.close()
     conn.close()
 
-    return render_template_string(
-        HTML_LISTADO_VENTAS,
-        ventas=ventas
-    )
+    return render_template('ventas.html', ventas=ventas)
 
 
 # ------------------- DETALLE VENTA ---------------------
@@ -728,7 +854,6 @@ HTML_DETALLE_VENTA = '''
 @app.route('/venta/<int:id_venta>')
 def ver_detalle_venta(id_venta):
     conn = get_db_connection()
-
     cur = conn.cursor()
 
     # Cabecera de la venta
@@ -744,18 +869,31 @@ def ver_detalle_venta(id_venta):
     """, (id_venta,))
 
     v = cur.fetchone()
+    
+    if not v:
+        return '''
+        <div style="font-family: Arial; padding: 40px; text-align: center;">
+            <h2>Venta no encontrada</h2>
+            <a href="/ventas">Volver a ventas</a>
+        </div>
+        '''
 
     venta = {
         "id": v[0],
-        "fecha": v[1],
+        "fecha": v[1].strftime("%d/%m/%Y %H:%M"),
         "cliente": v[2],
-        "total": v[3]
+        "total": f"{v[3]:.2f}"
     }
 
     # Detalle de la venta
     cur.execute("""
         SELECT
-            pb.nombre || ' - ' || pv.marca AS producto,
+            pb.nombre,
+            pv.marca,
+            pb.alto,
+            pb.ancho,
+            pb.largo,
+            pb.diametro,
             vd.cantidad,
             vd.precio_unitario,
             vd.cantidad * vd.precio_unitario AS subtotal
@@ -765,25 +903,34 @@ def ver_detalle_venta(id_venta):
         WHERE vd.id_venta = %s
     """, (id_venta,))
 
-    detalles = [
-        {
-            "producto": r[0],
-            "cantidad": r[1],
-            "precio_unitario": r[2],
-            "subtotal": r[3]
-        }
-        for r in cur.fetchall()
-    ]
+    detalles = []
+    for r in cur.fetchall():
+        nombre = r[0]
+        marca = r[1]
+        alto, ancho, largo, diametro = r[2], r[3], r[4], r[5]
+        cantidad = r[6]
+        precio_unitario = r[7]
+        subtotal = r[8]
+        
+        # Formatear nombre con dimensiones
+        if alto or ancho or largo or diametro:
+            producto_display = f"{nombre} ({alto or ''}x{ancho or ''}x{largo or ''}x{diametro or ''}) - {marca}"
+        else:
+            producto_display = f"{nombre} - {marca}"
+        
+        detalles.append({
+            "producto": producto_display,
+            "cantidad": cantidad,
+            "precio_unitario": f"{precio_unitario:.2f}",
+            "subtotal": f"{subtotal:.2f}"
+        })
 
     cur.close()
     conn.close()
 
-    return render_template_string(
-        HTML_DETALLE_VENTA,
-        venta=venta,
-        detalles=detalles
-    )
-
+    return render_template('detalle_venta.html',
+                         venta=venta,
+                         detalles=detalles)
 
 # --------------- REPORTE PRODUCTOS --------------
 
@@ -813,80 +960,25 @@ def listar_productos():
         ORDER BY pb.nombre, pv.marca;
     """)
 
-    productos = cur.fetchall()
+    productos = []
+    for r in cur.fetchall():
+        productos.append({
+            "producto": r[0],
+            "descripcion": r[1],
+            "marca": r[2],
+            "calidad": r[3],
+            "subcodigo": r[4],
+            "precio": f"{r[5]:.2f}",
+            "stock": r[6],
+            "proveedor": r[7],
+            "ubicacion": r[8]
+        })
 
     cur.close()
     conn.close()
 
-    html = """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <title>Listado de productos</title>
-        <style>
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            th, td {
-                border: 1px solid #ccc;
-                padding: 6px;
-                text-align: left;
-            }
-            th {
-                background-color: #eee;
-            }
-            .stock-bajo {
-                background-color: #ffe5e5;
-            }
-
-        </style>
-    </head>
-    <body>
-
-    <h1>Listado de productos</h1>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Marca</th>
-                <th>Calidad</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Proveedor</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if productos %}
-                {% for p in productos %}
-                <tr class="{{ 'stock-bajo' if p[6] <= 5 else '' }}">
-                    <td>{{ p[0] }}</td>
-                    <td>{{ p[2] }}</td>
-                    <td>{{ p[3] or "-" }}</td>
-                    <td>${{ p[5] }}</td>
-                    <td>{{ p[6] }}</td>
-                    <td>{{ p[7] or "-" }}</td>
-                </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="6">No hay productos cargados.</td>
-                </tr>
-            {% endif %}
-        </tbody>
-
-    </table>
-
-    <br>
-    <a href="/">Volver al inicio</a>
-
-    </body>
-    </html>
-    """
-
-    return render_template_string(html, productos=productos)
+    return render_template('productos.html',
+                         productos=productos)
 
 
 # ------------ MOSTRAR STOCK BAJO --------------------
@@ -902,7 +994,7 @@ def stock_bajo():
 
     cur.execute("""
         SELECT
-            COALESCE (pb.nombre, 'producto sin base') AS producto,
+            COALESCE(pb.nombre, 'producto sin base') AS producto,
             pv.marca,
             pv.calidad,
             pv.stock,
@@ -914,77 +1006,22 @@ def stock_bajo():
         ORDER BY pv.stock ASC, pb.nombre;
     """, (STOCK_MINIMO,))
 
-    productos = cur.fetchall()
+    productos = []
+    for r in cur.fetchall():
+        productos.append({
+            "producto": r[0],
+            "marca": r[1],
+            "calidad": r[2],
+            "stock": r[3],
+            "ubicacion": r[4]
+        })
 
     cur.close()
     conn.close()
 
-    html = """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <title>Stock bajo</title>
-        <style>
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            th, td {
-                border: 1px solid #ccc;
-                padding: 6px;
-            }
-            th {
-                background-color: #f2dede;
-            }
-            .critico {
-                background-color: #f8d7da;
-            }
-        </style>
-    </head>
-    <body>
-
-    <h1>Productos con stock bajo (≤ {{ stock_minimo }})</h1>
-
-    {% if productos %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Marca</th>
-                    <th>Calidad</th>
-                    <th>Stock</th>
-                    <th>Ubicación</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in productos %}
-                <tr class="{{ 'critico' if p[3] <= stock_minimo else '' }}">
-                    <td>{{ p[0] }}</td>
-                    <td>{{ p[1] }}</td>
-                    <td>{{ p[2] or "-" }}</td>
-                    <td><strong>{{ p[3] }}</strong></td>
-                    <td>{{ p[4] or "-" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No hay productos con stock bajo 🎉</p>
-    {% endif %}
-
-    <br>
-    <a href="/">Volver al inicio</a>
-
-    </body>
-    </html>
-    """
-
-    return render_template_string(
-        html,
-        productos=productos,
-        stock_minimo=STOCK_MINIMO
-    )
+    return render_template('stock_bajo.html',
+                         productos=productos,
+                         stock_minimo=STOCK_MINIMO)
 
 
 # ------------------- PRODUCTOS MÁS VENDIDOS ---------------
@@ -1010,63 +1047,19 @@ def productos_mas_vendidos():
         LIMIT 10;
     """)
 
-    productos = cur.fetchall()
+    productos = []
+    for r in cur.fetchall():
+        productos.append({
+            "producto": r[0],
+            "cantidad_vendida": r[1],
+            "total_facturado": f"{r[2]:.2f}"
+        })
 
     cur.close()
     conn.close()
 
-    html = """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <title>Productos más vendidos</title>
-        <style>
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            th, td {
-                border: 1px solid #ccc;
-                padding: 6px;
-                text-align: left;
-            }
-            th {
-                background-color: #e8f0fe;
-            }
-        </style>
-    </head>
-    <body>
-
-    <h1>Top 10 productos más vendidos</h1>
-
-    {% if productos %}
-    <table>
-        <tr>
-            <th>Producto</th>
-            <th>Cantidad vendida</th>
-            <th>Total facturado</th>
-        </tr>
-        {% for p in productos %}
-        <tr>
-            <td>{{ p[0] }}</td>
-            <td>{{ p[1] }}</td>
-            <td>${{ p[2] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% else %}
-        <p>Todavía no hay ventas registradas.</p>
-    {% endif %}
-
-    <br>
-    <a href="/">Volver al inicio</a>
-
-    </body>
-    </html>
-    """
-
-    return render_template_string(html, productos=productos)
+    return render_template('productos_mas_vendidos.html',
+                         productos=productos)
 
 #---- PRUEBA, BORRAR DSP --------
 
@@ -1080,7 +1073,21 @@ def test_db():
         return f"Error de conexión: {e}"
 
 
+# --------- ENDPOINT API PARA PRECIOS ---------------
 
+@app.route('/api/precios_productos')
+def api_precios_productos():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT id, precio FROM producto_variante")
+    precios = {str(row[0]): float(row[1]) for row in cur.fetchall()}
+    
+    cur.close()
+    conn.close()
+    
+    from flask import jsonify
+    return jsonify(precios)
 
 # --------------------
 

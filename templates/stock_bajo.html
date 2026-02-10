@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Bajo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tablas.css') }}">
+</head>
+<body>
+    
+    <div class="container" style="max-width: 1200px;">
+        
+        <div class="header-section">
+            <h2>⚠️ Productos con Stock Bajo</h2>
+            <span class="badge-alerta">Stock ≤ {{ stock_minimo }}</span>
+        </div>
+        
+        {% if productos %}
+        
+        <!-- Buscador -->
+        <div class="search-box">
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="Buscar producto, marca o ubicación..."
+                   autocomplete="off">
+        </div>
+        
+        <!-- Tabla -->
+        <div class="table-container">
+            <table class="tabla-moderna" id="tablaStock">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Marca</th>
+                        <th>Calidad</th>
+                        <th class="text-center">Stock</th>
+                        <th>Ubicación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                    <tr class="{% if p.stock == 0 %}stock-critico{% elif p.stock <= 2 %}stock-muy-bajo{% endif %}">
+                        <td data-label="Producto">{{ p.producto }}</td>
+                        <td data-label="Marca">{{ p.marca }}</td>
+                        <td data-label="Calidad">{{ p.calidad or "-" }}</td>
+                        <td data-label="Stock" class="text-center stock-valor">
+                            <span class="badge-stock {% if p.stock == 0 %}badge-critico{% elif p.stock <= 2 %}badge-muy-bajo{% else %}badge-bajo{% endif %}">
+                                {{ p.stock }}
+                            </span>
+                        </td>
+                        <td data-label="Ubicación">{{ p.ubicacion or "-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="sinResultados" class="sin-resultados" style="display: none;">
+            No se encontraron productos que coincidan con la búsqueda.
+        </div>
+        
+        {% else %}
+        
+        <div class="mensaje-vacio mensaje-exito-alt">
+            <p>🎉 ¡Todo el stock está bien!</p>
+            <p style="font-size: 16px; color: #666;">No hay productos con stock bajo en este momento.</p>
+        </div>
+        
+        {% endif %}
+        
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/stock_bajo.js') }}"></script>
+    
+</body>
+</html>

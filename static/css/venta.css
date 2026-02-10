@@ -1,0 +1,93 @@
+/* Estilos específicos para el formulario de venta */
+
+.producto-item {
+    background: #f9f9f9;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    position: relative;
+}
+
+.producto-item:hover {
+    border-color: #4CAF50;
+}
+
+.btn-eliminar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #f44336;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: background-color 0.3s;
+}
+
+.btn-eliminar:hover {
+    background: #d32f2f;
+}
+
+.producto-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+
+@media (max-width: 768px) {
+    .producto-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.subtotal {
+    background: #fff;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #4CAF50;
+    font-size: 18px;
+}
+
+.btn-agregar {
+    width: 100%;
+    padding: 12px;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: background-color 0.3s;
+}
+
+.btn-agregar:hover {
+    background: #1976D2;
+}
+
+.total-container {
+    background: #e8f5e9;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+.total-container h3 {
+    margin: 0;
+    color: #2e7d32;
+    font-size: 24px;
+}
+
+/* Ocultar template */
+template {
+    display: none;
+}

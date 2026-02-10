@@ -1,0 +1,74 @@
+/* Estilos específicos para ranking de productos */
+
+.tabla-ranking {
+    position: relative;
+}
+
+/* Columna de ranking */
+.ranking-pos {
+    width: 80px;
+    text-align: center !important;
+}
+
+/* Badges de ranking */
+.badge-ranking {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.badge-ranking.oro {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #333;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.badge-ranking.plata {
+    background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+    color: #333;
+    box-shadow: 0 4px 15px rgba(192, 192, 192, 0.4);
+}
+
+.badge-ranking.bronce {
+    background: linear-gradient(135deg, #CD7F32, #B8722C);
+    color: white;
+    box-shadow: 0 4px 15px rgba(205, 127, 50, 0.4);
+}
+
+/* Resaltar top 3 */
+.top-3 {
+    font-weight: 500;
+}
+
+.top-3 .producto-nombre {
+    font-weight: 600;
+    color: #333;
+}
+
+/* Cantidad vendida destacada */
+.cantidad-vendida {
+    font-weight: bold;
+    color: #667eea;
+    font-size: 18px;
+}
+
+/* Animación sutil al hover en top 3 */
+.top-3:hover {
+    transform: scale(1.02);
+    transition: transform 0.2s;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .badge-ranking {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+}

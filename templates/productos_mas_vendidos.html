@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos Más Vendidos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tablas.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ranking.css') }}">
+</head>
+<body>
+    
+    <div class="container" style="max-width: 1200px;">
+        
+        <div class="header-section">
+            <h2>🔥 Top 10 Productos Más Vendidos</h2>
+        </div>
+        
+        {% if productos %}
+        
+        <!-- Buscador -->
+        <div class="search-box">
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="Buscar producto..."
+                   autocomplete="off">
+        </div>
+        
+        <!-- Tabla con ranking -->
+        <div class="table-container">
+            <table class="tabla-moderna tabla-ranking" id="tablaRanking">
+                <thead>
+                    <tr>
+                        <th class="ranking-pos">#</th>
+                        <th>Producto</th>
+                        <th class="text-center">Cantidad Vendida</th>
+                        <th class="text-right">Total Facturado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                    <tr class="{% if loop.index <= 3 %}top-3{% endif %}">
+                        <td data-label="#" class="ranking-pos">
+                            <span class="badge-ranking {% if loop.index == 1 %}oro{% elif loop.index == 2 %}plata{% elif loop.index == 3 %}bronce{% endif %}">
+                                {{ loop.index }}
+                            </span>
+                        </td>
+                        <td data-label="Producto" class="producto-nombre">
+                            {% if loop.index == 1 %}👑{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% endif %}
+                            {{ p.producto }}
+                        </td>
+                        <td data-label="Cantidad" class="text-center cantidad-vendida">
+                            {{ p.cantidad_vendida }}
+                        </td>
+                        <td data-label="Total" class="text-right monto">
+                            ${{ p.total_facturado }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="sinResultados" class="sin-resultados" style="display: none;">
+            No se encontraron productos que coincidan con la búsqueda.
+        </div>
+        
+        {% else %}
+        
+        <div class="mensaje-vacio">
+            <p>📊 Todavía no hay ventas registradas.</p>
+            <a href="/venta" class="btn btn-primary">Registrar primera venta</a>
+        </div>
+        
+        {% endif %}
+        
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/productos_mas_vendidos.js') }}"></script>
+    
+</body>
+</html>

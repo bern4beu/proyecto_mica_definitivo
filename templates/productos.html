@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tablas.css') }}">
+</head>
+<body>
+    
+    <div class="container" style="max-width: 1400px;">
+        
+        <div class="header-section">
+            <h2>📦 Listado de Productos</h2>
+            <div style="display: flex; gap: 10px;">
+                <a href="/producto_base" class="btn btn-primary">+ Producto Base</a>
+                <a href="/producto_variante" class="btn btn-primary">+ Variante</a>
+            </div>
+        </div>
+        
+        {% if productos %}
+        
+        <!-- Buscador -->
+        <div class="search-box">
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="Buscar por producto, marca, proveedor o ubicación..."
+                   autocomplete="off">
+        </div>
+        
+        <!-- Filtro de stock -->
+        <div class="filtros-container">
+            <label>
+                <input type="checkbox" id="filtroStockBajo">
+                Mostrar solo stock bajo (≤ 5)
+            </label>
+        </div>
+        
+        <!-- Tabla de productos -->
+        <div class="table-container">
+            <table class="tabla-moderna" id="tablaProductos">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Marca</th>
+                        <th>Calidad</th>
+                        <th class="text-right">Precio</th>
+                        <th class="text-center">Stock</th>
+                        <th>Proveedor</th>
+                        <th>Ubicación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                    <tr class="{% if p.stock <= 5 %}stock-bajo-row{% endif %}" data-stock="{{ p.stock }}">
+                        <td data-label="Producto">{{ p.producto }}</td>
+                        <td data-label="Marca">{{ p.marca }}</td>
+                        <td data-label="Calidad">{{ p.calidad or "-" }}</td>
+                        <td data-label="Precio" class="text-right precio">${{ p.precio }}</td>
+                        <td data-label="Stock" class="text-center">
+                            <span class="badge-stock-simple {% if p.stock == 0 %}critico{% elif p.stock <= 2 %}muy-bajo{% elif p.stock <= 5 %}bajo{% else %}ok{% endif %}">
+                                {{ p.stock }}
+                            </span>
+                        </td>
+                        <td data-label="Proveedor">{{ p.proveedor or "-" }}</td>
+                        <td data-label="Ubicación">{{ p.ubicacion or "-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="sinResultados" class="sin-resultados" style="display: none;">
+            No se encontraron productos que coincidan con los filtros.
+        </div>
+        
+        <!-- Resumen -->
+        <div class="resumen-productos">
+            <p><strong>Total de productos:</strong> <span id="totalProductos">{{ productos|length }}</span></p>
+            <p><strong>Productos visibles:</strong> <span id="productosVisibles">{{ productos|length }}</span></p>
+        </div>
+        
+        {% else %}
+        
+        <div class="mensaje-vacio">
+            <p>📦 No hay productos cargados todavía.</p>
+            <a href="/producto_base" class="btn btn-primary">Cargar producto base</a><br><br>
+            <a href="/producto_variante" class="btn btn-primary">Cargar producto variante</a>
+        </div>
+        
+        {% endif %}
+        
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/productos.js') }}"></script>
+    
+</body>
+</html>

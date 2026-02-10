@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tablas.css') }}">
+</head>
+<body>
+    
+    <div class="container" style="max-width: 1200px;">
+        <div class="header-section">
+            <h2>Ventas Registradas</h2>
+            <a href="/venta" class="btn btn-primary">+ Nueva Venta</a>
+        </div>
+        
+        {% if ventas %}
+        
+        <!-- Buscador -->
+        <div class="search-box">
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="Buscar por cliente, fecha o total..."
+                   autocomplete="off">
+        </div>
+        
+        <!-- Tabla de ventas -->
+        <div class="table-container">
+            <table class="tabla-moderna" id="tablaVentas">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in ventas %}
+                    <tr>
+                        <td data-label="ID">#{{ v.id }}</td>
+                        <td data-label="Fecha">{{ v.fecha }}</td>
+                        <td data-label="Cliente">{{ v.cliente }}</td>
+                        <td data-label="Total" class="monto">${{ v.total }}</td>
+                        <td data-label="Acciones">
+                            <a href="/venta/{{ v.id }}" class="btn-detalle">Ver detalle</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="sinResultados" class="sin-resultados" style="display: none;">
+            No se encontraron ventas que coincidan con la búsqueda.
+        </div>
+        
+        {% else %}
+        
+        <div class="mensaje-vacio">
+            <p>📋 No hay ventas registradas todavía.</p>
+            <a href="/venta" class="btn btn-primary">Registrar primera venta</a>
+        </div>
+        
+        {% endif %}
+        
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/ventas.js') }}"></script>
+    
+</body>
+</html>

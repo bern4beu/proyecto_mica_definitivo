@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Venta</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/venta.css') }}">
+</head>
+<body>
+    
+    <div class="container" style="max-width: 800px;">
+        <h2>Registrar Venta</h2>
+        
+        <div id="mensaje" class="mensaje"></div>
+        
+        {% if not productos %}
+        <div class="mensaje error show">
+            <strong>No hay productos para vender</strong><br>
+            Primero cargá productos y sus variantes.
+        </div>
+        <a href="/producto_base" class="btn btn-primary">Cargar producto base</a><br><br>
+        <a href="/producto_variante" class="btn btn-primary">Cargar producto variante</a><br><br>
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+        
+        {% else %}
+        
+        <form id="formVenta" method="POST">
+            
+            <!-- Cliente -->
+            <div class="form-group">
+                <label for="id_cliente">Cliente:</label>
+                <select id="id_cliente" name="id_cliente">
+                    <option value="">-- Mostrador (sin cliente) --</option>
+                    {% for c in clientes %}
+                    <option value="{{ c[0] }}">{{ c[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 2px solid #eee;">
+            
+            <h3 style="margin-bottom: 20px; color: #555;">Productos</h3>
+            
+            <!-- Contenedor de productos -->
+            <div id="productosContainer">
+                <!-- El primer producto se agrega automáticamente con JavaScript -->
+            </div>
+            
+            <!-- Botón para agregar más productos -->
+            <button type="button" id="btnAgregarProducto" class="btn-agregar">
+                + Agregar otro producto
+            </button>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 2px solid #eee;">
+            
+            <!-- Total -->
+            <div class="total-container">
+                <h3>Total: $<span id="totalVenta">0.00</span></h3>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Registrar Venta</button>
+        </form>
+        
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+        
+        {% endif %}
+    </div>
+    
+    <!-- Template para productos (oculto) -->
+    <template id="templateProducto">
+        <div class="producto-item">
+            <button type="button" class="btn-eliminar" title="Eliminar producto">✕</button>
+            
+            <div class="producto-grid">
+                <div class="form-group">
+                    <label>Producto:</label>
+                    <select class="select-producto" name="producto_{{index}}">
+                        <option value="">-- Seleccionar --</option>
+                        {% for p in productos %}
+                        <option value="{{ p[0] }}" data-precio="0">{{ p[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Cantidad:</label>
+                    <input type="number" 
+                           class="input-cantidad" 
+                           name="cantidad_{{index}}" 
+                           min="1" 
+                           value="1"
+                           placeholder="1">
+                </div>
+                
+                <div class="form-group">
+                    <label>Subtotal:</label>
+                    <div class="subtotal">$<span class="subtotal-valor">0.00</span></div>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <script>
+        // Pasar datos de Python a JavaScript
+        const productosData = {
+            {% for p in productos %}
+            "{{ p[0] }}": {
+                nombre: "{{ p[1] }}",
+                precio: 0  // El precio se carga dinámicamente
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/venta.js') }}"></script>
+    
+</body>
+</html>

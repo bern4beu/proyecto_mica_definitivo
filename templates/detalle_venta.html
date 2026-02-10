@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Venta #{{ venta.id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detalle_venta.css') }}">
+</head>
+<body>
+    
+    <div class="container" style="max-width: 900px;">
+        
+        <!-- Header con info de la venta -->
+        <div class="factura-header">
+            <div>
+                <h2>Venta #{{ venta.id }}</h2>
+                <p class="fecha">{{ venta.fecha }}</p>
+            </div>
+            <div class="acciones-header">
+                <a href="/ventas" class="btn btn-secondary">← Volver a ventas</a>
+            </div>
+        </div>
+        
+        <!-- Info del cliente -->
+        <div class="info-card">
+            <h3>Cliente</h3>
+            <p class="cliente-nombre">{{ venta.cliente }}</p>
+        </div>
+        
+        <!-- Productos vendidos -->
+        <div class="productos-section">
+            <h3>Productos</h3>
+            
+            <div class="table-container">
+                <table class="tabla-detalle">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-right">Precio Unit.</th>
+                            <th class="text-right">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in detalles %}
+                        <tr>
+                            <td data-label="Producto">{{ d.producto }}</td>
+                            <td data-label="Cantidad" class="text-center cantidad">{{ d.cantidad }}</td>
+                            <td data-label="Precio Unit." class="text-right">${{ d.precio_unitario }}</td>
+                            <td data-label="Subtotal" class="text-right subtotal">${{ d.subtotal }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Total -->
+        <div class="total-factura">
+            <div class="total-row">
+                <span>TOTAL</span>
+                <span class="total-monto">${{ venta.total }}</span>
+            </div>
+        </div>
+        
+        <!-- Botones finales -->
+        <div class="acciones-footer">
+            <a href="/ventas" class="btn btn-secondary">← Volver a ventas</a>
+            <a href="/venta" class="btn btn-primary">+ Nueva Venta</a>
+        </div>
+        
+    </div>
+    
+</body>
+</html>

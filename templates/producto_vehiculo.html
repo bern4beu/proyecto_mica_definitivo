@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asociar Producto con Vehículos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    
+    <div class="container">
+        <h2>Asociar Producto Base con Vehículos</h2>
+        
+        <div id="mensaje" class="mensaje {% if mensaje_exito %}exito show{% endif %}">
+            {{ mensaje_exito }}
+        </div>
+        
+        {% if not productos %}
+        <div class="mensaje error show">
+            <strong>No hay productos base cargados</strong><br>
+            Primero tenés que crear al menos un producto base.
+        </div>
+        <a href="/producto_base" class="btn btn-primary">Cargar producto base</a>
+        <br><br>
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+        
+        {% elif not vehiculos %}
+        <div class="mensaje error show">
+            <strong>No hay vehículos cargados</strong><br>
+            Primero tenés que cargar vehículos.
+        </div>
+        <a href="/agregar_vehiculo" class="btn btn-primary">Cargar vehículos</a>
+        <br><br>
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+        
+        {% else %}
+        
+        <form id="formProductoVehiculo" method="POST">
+            
+            <div class="form-group">
+                <label for="id_producto_base">Producto Base: *</label>
+                <select id="id_producto_base" name="id_producto_base" required>
+                    <option value="">-- Seleccionar --</option>
+                    {% for p in productos %}
+                    <option value="{{ p[0] }}">{{ p[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="vehiculos">
+                    Vehículos (podés seleccionar varios): *
+                    <small style="display: block; color: #888; margin-top: 5px;">
+                        Mantené presionado Ctrl (Windows) o Cmd (Mac) para seleccionar múltiples
+                    </small>
+                </label>
+                <select id="vehiculos" 
+                        name="vehiculos" 
+                        multiple 
+                        size="8" 
+                        required>
+                    {% for v in vehiculos %}
+                    <option value="{{ v[0] }}">
+                        {{ v[1] }} {{ v[2] }} {% if v[3] %}{{ v[3] }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Asociar Vehículos</button>
+        </form>
+        
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+        
+        {% endif %}
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/producto_vehiculo.js') }}"></script>
+    
+</body>
+</html>

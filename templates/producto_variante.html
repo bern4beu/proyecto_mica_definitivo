@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Producto Variante</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    
+    <div class="container">
+        <h2>Agregar Producto Variante</h2>
+        
+        <div id="mensaje" class="mensaje {% if mensaje_exito %}exito show{% elif mensaje_error %}error show{% endif %}">
+            {{ mensaje_exito or mensaje_error }}
+        </div>
+        
+        {% if not productos %}
+        <div class="mensaje error show">
+            <strong>No hay productos base cargados</strong><br>
+            Primero tenés que crear un producto base.
+        </div>
+        <a href="/producto_base" class="btn btn-primary">Cargar producto base</a>
+        <br><br>
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+        
+        {% else %}
+        
+        <form id="formProductoVariante" method="POST">
+            
+            <div class="form-group">
+                <label for="id_producto_base">Producto Base: *</label>
+                <select id="id_producto_base" name="id_producto_base" required>
+                    <option value="">-- Seleccionar --</option>
+                    {% for p in productos %}
+                    <option value="{{ p[0] }}">{{ p[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="marca">Marca: *</label>
+                <input type="text" 
+                       id="marca" 
+                       name="marca" 
+                       placeholder="Ej: Bosch, Mahle, Mann"
+                       autocomplete="off"
+                       required>
+            </div>
+            
+            <div class="form-group">
+                <label for="calidad">Calidad:</label>
+                <input type="text" 
+                       id="calidad" 
+                       name="calidad" 
+                       placeholder="Ej: Original, Alternativa, Premium"
+                       autocomplete="off">
+            </div>
+            
+            <div class="form-group">
+                <label for="precio">Precio de venta: *</label>
+                <input type="number" 
+                       id="precio" 
+                       name="precio" 
+                       step="0.01"
+                       placeholder="0.00"
+                       autocomplete="off"
+                       required>
+            </div>
+            
+            <div class="form-group">
+                <label for="precio_compra">Precio de compra:</label>
+                <input type="number" 
+                       id="precio_compra" 
+                       name="precio_compra" 
+                       step="0.01"
+                       placeholder="0.00"
+                       autocomplete="off">
+            </div>
+            
+            <div class="form-group">
+                <label for="stock">Stock: *</label>
+                <input type="number" 
+                       id="stock" 
+                       name="stock" 
+                       placeholder="0"
+                       autocomplete="off"
+                       required>
+            </div>
+            
+            <div class="form-group">
+                <label for="ubicacion">Ubicación:</label>
+                <input type="text" 
+                       id="ubicacion" 
+                       name="ubicacion" 
+                       placeholder="Ej: Estante A3, Depósito"
+                       autocomplete="off">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_proveedor">Proveedor:</label>
+                <select id="id_proveedor" name="id_proveedor">
+                    <option value="">-- Sin proveedor --</option>
+                    {% for prov in proveedores %}
+                    <option value="{{ prov[0] }}">{{ prov[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Agregar Variante</button>
+        </form>
+        
+        <a href="/" class="btn btn-secondary">Volver al inicio</a>
+        
+        {% endif %}
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/producto_variante.js') }}"></script>
+    
+</body>
+</html>
