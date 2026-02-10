@@ -49,83 +49,49 @@ def health():
 
 # ----------- INICIO ---------------------
 
-HTML_HOME = '''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Sistema de Gestión</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f8;
-            padding: 40px;
-        }
-        h1 {
-            margin-bottom: 20px;
-        }
-        .section {
-            background: #ffffff;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-radius: 8px;
-            max-width: 520px;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        li {
-            margin: 10px 0;
-        }
-        a {
-            text-decoration: none;
-            color: #0066cc;
-            font-weight: bold;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-
-<h1>Sistema de Gestión</h1>
-
-<div class="section">
-    <h2>Carga de datos</h2>
-    <ul>
-        <li><a href="/clientes">Clientes</a></li>
-        <li><a href="/proveedor">Proveedores</a></li>
-        <li><a href="/agregar_vehiculo">Vehículos</a></li>
-
-        <li><a href="/producto_base">Producto base</a></li>
-        <li><a href="/producto_variante">Producto variante</a></li>
-        <li><a href="/producto_vehiculo">Asociar producto ↔ vehículo</a></li>
-
-        <li><a href="/venta">Registrar venta</a></li>
-    </ul>
-</div>
-
-<div class="section">
-    <h2>Consultas</h2>
-    <ul>
-        <li><a href="/ventas">📄 Ventas</a></li>
-        <li><a href="/productos">📦 Productos</a></li>
-        <li><a href="/stock-bajo">⚠️ Stock bajo</a></li>
-        <li><a href="/productos-mas-vendidos">🔥 Productos más vendidos</a></li>
-
-    </ul>
-</div>
-
-</body>
-</html>
-'''
-
 
 @app.route('/')
 def home():
-    return render_template_string(HTML_HOME)
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Estadísticas
+    
+    # Ventas del mes actual
+    cur.execute("""
+        SELECT 
+            COALESCE(SUM(total), 0) as total_mes,
+            COUNT(*) as cantidad
+        FROM venta
+        WHERE EXTRACT(MONTH FROM fecha) = EXTRACT(MONTH FROM CURRENT_DATE)
+          AND EXTRACT(YEAR FROM fecha) = EXTRACT(YEAR FROM CURRENT_DATE)
+    """)
+    ventas_mes = cur.fetchone()
+    
+    # Total de productos (variantes)
+    cur.execute("SELECT COUNT(*) FROM producto_variante")
+    total_productos = cur.fetchone()[0]
+    
+    # Productos con stock bajo
+    cur.execute("SELECT COUNT(*) FROM producto_variante WHERE stock <= %s", (STOCK_MINIMO,))
+    stock_bajo = cur.fetchone()[0]
+    
+    # Total de clientes
+    cur.execute("SELECT COUNT(*) FROM cliente")
+    total_clientes = cur.fetchone()[0]
+    
+    cur.close()
+    conn.close()
+    
+    stats = {
+        "ventas_mes": f"{ventas_mes[0]:.2f}",
+        "cantidad_ventas": ventas_mes[1],
+        "total_productos": total_productos,
+        "stock_bajo": stock_bajo,
+        "total_clientes": total_clientes
+    }
+    
+    return render_template('home.html', stats=stats)
 
 
 # ---------- CLIENTES ----------

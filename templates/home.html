@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión - Mica</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    
+    <div class="dashboard-container">
+        
+        <!-- Header -->
+        <div class="dashboard-header">
+            <h1>Sistema de Gestión</h1>
+            <p class="subtitle">Panel de control</p>
+        </div>
+        
+        <!-- Estadísticas principales -->
+        <div class="stats-grid">
+            
+            <div class="stat-card ventas">
+                <div class="stat-icon">💰</div>
+                <div class="stat-info">
+                    <h3>Ventas del Mes</h3>
+                    <p class="stat-number">${{ stats.ventas_mes }}</p>
+                    <span class="stat-label">{{ stats.cantidad_ventas }} ventas</span>
+                </div>
+            </div>
+            
+            <div class="stat-card productos">
+                <div class="stat-icon">📦</div>
+                <div class="stat-info">
+                    <h3>Productos</h3>
+                    <p class="stat-number">{{ stats.total_productos }}</p>
+                    <span class="stat-label">variantes en stock</span>
+                </div>
+            </div>
+            
+            <div class="stat-card stock">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-info">
+                    <h3>Stock Bajo</h3>
+                    <p class="stat-number {% if stats.stock_bajo > 0 %}alerta{% endif %}">
+                        {{ stats.stock_bajo }}
+                    </p>
+                    <span class="stat-label">productos críticos</span>
+                </div>
+            </div>
+            
+            <div class="stat-card clientes">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3>Clientes</h3>
+                    <p class="stat-number">{{ stats.total_clientes }}</p>
+                    <span class="stat-label">registrados</span>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Acciones rápidas -->
+        <div class="section">
+            <h2 class="section-title">⚡ Acciones Rápidas</h2>
+            <div class="quick-actions">
+                <a href="/venta" class="action-card primary">
+                    <div class="action-icon">🛒</div>
+                    <h3>Registrar Venta</h3>
+                    <p>Nueva operación</p>
+                </a>
+                
+                <a href="/producto_variante" class="action-card secondary">
+                    <div class="action-icon">➕</div>
+                    <h3>Agregar Producto</h3>
+                    <p>Nueva variante</p>
+                </a>
+                
+                <a href="/clientes" class="action-card secondary">
+                    <div class="action-icon">👤</div>
+                    <h3>Nuevo Cliente</h3>
+                    <p>Registrar cliente</p>
+                </a>
+                
+                <a href="/agregar_vehiculo" class="action-card secondary">
+                    <div class="action-icon">🚗</div>
+                    <h3>Agregar Vehículo</h3>
+                    <p>Nuevo modelo</p>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Consultas -->
+        <div class="section">
+            <h2 class="section-title">📊 Consultas e Informes</h2>
+            <div class="menu-grid">
+                
+                <a href="/ventas" class="menu-card">
+                    <div class="menu-icon">📄</div>
+                    <h3>Ventas</h3>
+                    <p>Historial completo</p>
+                </a>
+                
+                <a href="/productos" class="menu-card">
+                    <div class="menu-icon">📦</div>
+                    <h3>Productos</h3>
+                    <p>Inventario completo</p>
+                </a>
+                
+                <a href="/stock-bajo" class="menu-card {% if stats.stock_bajo > 0 %}alerta-card{% endif %}">
+                    <div class="menu-icon">⚠️</div>
+                    <h3>Stock Bajo</h3>
+                    <p>Productos críticos</p>
+                    {% if stats.stock_bajo > 0 %}
+                    <span class="badge-alerta-menu">{{ stats.stock_bajo }}</span>
+                    {% endif %}
+                </a>
+                
+                <a href="/productos-mas-vendidos" class="menu-card">
+                    <div class="menu-icon">🔥</div>
+                    <h3>Más Vendidos</h3>
+                    <p>Top 10 productos</p>
+                </a>
+                
+            </div>
+        </div>
+        
+        <!-- Carga de datos -->
+        <div class="section">
+            <h2 class="section-title">🗂️ Gestión de Datos</h2>
+            <div class="menu-grid">
+                
+                <a href="/producto_base" class="menu-card-small">
+                    <div class="menu-icon-small">📋</div>
+                    <span>Producto Base</span>
+                </a>
+                
+                <a href="/producto_variante" class="menu-card-small">
+                    <div class="menu-icon-small">🏷️</div>
+                    <span>Producto Variante</span>
+                </a>
+                
+                <a href="/producto_vehiculo" class="menu-card-small">
+                    <div class="menu-icon-small">🔗</div>
+                    <span>Producto ↔ Vehículo</span>
+                </a>
+                
+                <a href="/clientes" class="menu-card-small">
+                    <div class="menu-icon-small">👥</div>
+                    <span>Clientes</span>
+                </a>
+                
+                <a href="/proveedor" class="menu-card-small">
+                    <div class="menu-icon-small">🏢</div>
+                    <span>Proveedores</span>
+                </a>
+                
+                <a href="/agregar_vehiculo" class="menu-card-small">
+                    <div class="menu-icon-small">🚗</div>
+                    <span>Vehículos</span>
+                </a>
+                
+            </div>
+        </div>
+        
+    </div>
+    
+</body>
+</html>
