@@ -29,13 +29,52 @@
                    autocomplete="off">
         </div>
         
-        <!-- Filtro de stock -->
-        <div class="filtros-container">
-            <label>
-                <input type="checkbox" id="filtroStockBajo">
-                Mostrar solo stock bajo (≤ 5)
-            </label>
+        <!-- Filtros -->
+<div class="filtros-container">
+    
+    <!-- Filtro por vehículo -->
+    <div class="filtro-vehiculo">
+        <h4 style="margin: 0 0 15px 0; color: #667eea;">🚗 Filtrar por Vehículo</h4>
+        
+        <div class="filtro-vehiculo-grid">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="filtroMarca">Marca:</label>
+                <select id="filtroMarca">
+                    <option value="">-- Todas --</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="filtroModelo">Modelo:</label>
+                <select id="filtroModelo" disabled>
+                    <option value="">-- Seleccione marca --</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="filtroMotor">Motor:</label>
+                <select id="filtroMotor" disabled>
+                    <option value="">-- Seleccione modelo --</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; align-items: flex-end;">
+                <button type="button" id="btnLimpiarVehiculo" class="btn-limpiar" style="width: 100%;">
+                    Limpiar
+                </button>
+            </div>
         </div>
+    </div>
+    
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+    
+    <!-- Filtro de stock -->
+    <label style="margin: 0;">
+        <input type="checkbox" id="filtroStockBajo">
+        Mostrar solo stock bajo (≤ 5)
+    </label>
+    
+</div>
         
         <!-- Tabla de productos -->
         <div class="table-container">
@@ -53,7 +92,7 @@
                 </thead>
                 <tbody>
                     {% for p in productos %}
-                    <tr class="{% if p.stock <= 5 %}stock-bajo-row{% endif %}" data-stock="{{ p.stock }}">
+                    <tr class="{% if p.stock <= 5 %}stock-bajo-row{% endif %}" data-stock="{{ p.stock }}" data-productoid="{{ p.id }}">
                         <td data-label="Producto">{{ p.producto }}</td>
                         <td data-label="Marca">{{ p.marca }}</td>
                         <td data-label="Calidad">{{ p.calidad or "-" }}</td>

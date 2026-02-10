@@ -3,7 +3,7 @@
 # Stock se descuenta y total se calcula automáticamente.
 
 
-from flask import Flask, request, render_template_string, render_template, jsonify
+from flask import Flask, request, render_template, jsonify
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -95,15 +95,7 @@ def home():
 
 
 # ---------- CLIENTES ----------
-HTML_FORM_CLIENTE = '''
-<h2>Agregar Cliente</h2>
-<form method="POST">
-  Nombre del cliente: <input type="text" name="nombre" required>
-  <input type="submit" value="Agregar">
-</form>
-<a href="/producto_base">Ir a Producto Base</a><br>
-<a href="/agregar_vehiculo">Ir a Vehículos</a>
-'''
+
 
 @app.route('/clientes', methods=['GET', 'POST'])
 def agregar_cliente():
@@ -126,20 +118,7 @@ def agregar_cliente():
 
 
 # ---------- VEHICULOS ----------
-HTML_FORM_VEHICULO = '''
-<h2>Agregar Vehículo</h2>
 
-<form method="POST">
-  Marca: <input type="text" name="marca" required><br><br>
-  Modelo: <input type="text" name="modelo" required><br><br>
-  Motor: <input type="text" name="motor"><br><br>
-
-  <input type="submit" value="Agregar Vehículo">
-</form>
-
-<br>
-<a href="/">Volver</a>
-'''
 
 @app.route("/agregar_vehiculo", methods=["GET", "POST"])
 def agregar_vehiculo():
@@ -175,22 +154,11 @@ def agregar_vehiculo():
 
 
 # ---------- PRODUCTO BASE ----------
+
 def to_numeric_or_none(value):
     return value if value != '' else None
 
-HTML_FORM_BASE = '''
-<h2>Agregar Producto Base</h2>
-<form method="POST">
-  Nombre: <input type="text" name="nombre"><br>
-  Descripción: <input type="text" name="descripcion"><br>
-  Alto: <input type="number" name="alto" step="0.01"><br>
-  Ancho: <input type="number" name="ancho" step="0.01"><br>
-  Largo: <input type="number" name="largo" step="0.01"><br>
-  Diámetro: <input type="number" name="diametro" step="0.01"><br>
-  <input type="submit" value="Agregar">
-</form>
-<a href="/">Volver a Clientes</a>
-'''
+
 
 @app.route('/producto_base', methods=['GET', 'POST'])
 def agregar_producto_base():
@@ -222,36 +190,7 @@ def agregar_producto_base():
 
 # --------- PRODUCTO BASE ↔ VEHICULO ----------
 
-HTML_FORM_PRODUCTO_VEHICULO = '''
-<h2>Asociar Producto Base con Vehículos</h2>
 
-<form method="POST">
-
-Producto Base:
-<select name="id_producto_base" required>
-  {% for p in productos %}
-    <option value="{{ p[0] }}">{{ p[1] }}</option>
-  {% endfor %}
-</select>
-
-<br><br>
-
-Vehículos (podés seleccionar varios):
-<br>
-<select name="vehiculos" multiple size="6" required>
-  {% for v in vehiculos %}
-    <option value="{{ v[0] }}">{{ v[1] }} {{ v[2] }} {{ v[3] or '' }}</option>
-  {% endfor %}
-</select>
-
-<br><br>
-
-<input type="submit" value="Asociar">
-</form>
-
-<br>
-<a href="/">Volver</a>
-'''
 
 @app.route('/producto_vehiculo', methods=['GET', 'POST'])
 def asociar_producto_vehiculo():
@@ -314,17 +253,7 @@ def asociar_producto_vehiculo():
 
 
 # ---------- PROVEEDORES ----------
-HTML_FORM_PROVEEDOR = '''
-<h2>Agregar Proveedor</h2>
-<form method="POST">
-  Nombre del proveedor: <input type="text" name="nombre" required><br><br>
-  <input type="submit" value="Agregar Proveedor">
-</form>
 
-<br>
-<a href="/producto_variante">Ir a Producto Variante</a><br>
-<a href="/">Volver a Clientes</a>
-'''
 
 @app.route('/proveedor', methods=['GET', 'POST'])
 def agregar_proveedor():
@@ -348,42 +277,7 @@ def agregar_proveedor():
 
 
 # ---------- PRODUCTO VARIANTE ----------
-HTML_FORM_VARIANTE = '''
-<h2>Agregar Producto Variante</h2>
-<form method="POST">
 
-Producto Base:
-<select name="id_producto_base" required>
-  {% for p in productos %}
-    <option value="{{ p[0] }}">{{ p[1] }}</option>
-  {% endfor %}
-</select>
-<br><br>
-
-Marca: <input type="text" name="marca" required><br><br>
-
-Calidad: <input type="text" name="calidad"><br><br>
-
-Precio venta: <input type="number" step="0.01" name="precio" required><br><br>
-
-Precio compra: <input type="number" step="0.01" name="precio_compra"><br><br>
-
-Stock: <input type="number" name="stock" required><br><br>
-
-Ubicación: <input type="text" name="ubicacion"><br><br>
-
-Proveedor:
-<select name="id_proveedor">
-  <option value="">-- Sin proveedor --</option>
-  {% for prov in proveedores %}
-    <option value="{{ prov[0] }}">{{ prov[1] }}</option>
-  {% endfor %}
-</select>
-<br><br>
-
-<input type="submit" value="Agregar Variante">
-</form>
-'''
 
 from psycopg2 import errors
 
@@ -491,52 +385,6 @@ def agregar_producto_variante():
 
 # ------------------ VENTA ------------------------------
 
-HTML_FORM_VENTA = '''
-<h2>Registrar Venta</h2>
-
-<form method="POST">
-
-Cliente:
-<select name="id_cliente">
-  <option value="">-- Sin cliente --</option>  
-  {% for c in clientes %}
-    <option value="{{ c[0] }}">{{ c[1] }}</option>
-  {% endfor %}
-</select>
-
-<hr>
-
-<h4>Producto 1</h4>
-<select name="producto_1">
-  <option value="">-- Seleccionar --</option>
-  {% for p in productos %}
-    <option value="{{ p[0] }}">{{ p[1] }}</option>
-  {% endfor %}
-</select>
-Cantidad: <input type="number" name="cantidad_1" min="1">
-
-<h4>Producto 2</h4>
-<select name="producto_2">
-  <option value="">-- Seleccionar --</option>
-  {% for p in productos %}
-    <option value="{{ p[0] }}">{{ p[1] }}</option>
-  {% endfor %}
-</select>
-Cantidad: <input type="number" name="cantidad_2" min="1">
-
-<h4>Producto 3</h4>
-<select name="producto_3">
-  <option value="">-- Seleccionar --</option>
-  {% for p in productos %}
-    <option value="{{ p[0] }}">{{ p[1] }}</option>
-  {% endfor %}
-</select>
-Cantidad: <input type="number" name="cantidad_3" min="1">
-
-<br><br>
-<input type="submit" value="Guardar Venta">
-</form>
-'''
 
 
 @app.route('/venta', methods=['GET', 'POST'])
@@ -716,39 +564,6 @@ def agregar_venta():
 
 # ----------------- LISTADO VENTA ------------------
 
-HTML_LISTADO_VENTAS = '''
-<h2>Ventas</h2>
-
-{% if ventas %}
-<table border="1" cellpadding="5">
-<tr>
-  <th>ID</th>
-  <th>Fecha</th>
-  <th>Cliente</th>
-  <th>Total</th>
-  <th>Acciones</th>
-</tr>
-
-{% for v in ventas %}
-<tr>
-  <td>{{ v.id }}</td>
-  <td>{{ v.fecha }}</td>
-  <td>{{ v.cliente }}</td>
-  <td>${{ v.total }}</td>
-  <td><a href="/venta/{{ v.id }}">Ver detalle</a></td>
-</tr>
-{% endfor %}
-</table>
-{% else %}
-<p>No hay ventas registradas.</p>
-<a href="/venta">Registrar una venta</a>
-{% endif %}
-
-<br><br>
-<a href="/">Volver al inicio</a>
-'''
-
-
 
 @app.route('/ventas')
 def listar_ventas_app():
@@ -783,39 +598,6 @@ def listar_ventas_app():
 
 # ------------------- DETALLE VENTA ---------------------
 
-
-HTML_DETALLE_VENTA = '''
-<h2>Detalle de Venta #{{ venta.id }}</h2>
-
-<p>
-<b>Fecha:</b> {{ venta.fecha }}<br>
-<b>Cliente:</b> {{ venta.cliente }}<br>
-<b>Total:</b> ${{ venta.total }}
-</p>
-
-<hr>
-
-<table border="1" cellpadding="5">
-<tr>
-  <th>Producto</th>
-  <th>Cantidad</th>
-  <th>Precio unitario</th>
-  <th>Subtotal</th>
-</tr>
-
-{% for d in detalles %}
-<tr>
-  <td>{{ d.producto }}</td>
-  <td>{{ d.cantidad }}</td>
-  <td>${{ d.precio_unitario }}</td>
-  <td>${{ d.subtotal }}</td>
-</tr>
-{% endfor %}
-</table>
-
-<br>
-<a href="/ventas">Volver a ventas</a>
-'''
 
 @app.route('/venta/<int:id_venta>')
 def ver_detalle_venta(id_venta):
@@ -900,7 +682,6 @@ def ver_detalle_venta(id_venta):
 
 # --------------- REPORTE PRODUCTOS --------------
 
-from flask import render_template_string
 
 @app.route("/productos")
 def listar_productos():
@@ -909,6 +690,7 @@ def listar_productos():
 
     cur.execute("""
         SELECT
+            pv.id                AS id_variante,
             pb.nombre            AS producto,
             pb.descripcion       AS descripcion,
             pv.marca             AS marca,
@@ -929,15 +711,16 @@ def listar_productos():
     productos = []
     for r in cur.fetchall():
         productos.append({
-            "producto": r[0],
-            "descripcion": r[1],
-            "marca": r[2],
-            "calidad": r[3],
-            "subcodigo": r[4],
-            "precio": f"{r[5]:.2f}",
-            "stock": r[6],
-            "proveedor": r[7],
-            "ubicacion": r[8]
+            "id": r[0],
+            "producto": r[1],
+            "descripcion": r[2],
+            "marca": r[3],
+            "calidad": r[4],
+            "subcodigo": r[5],
+            "precio": f"{r[6]:.2f}",
+            "stock": r[7],
+            "proveedor": r[8],
+            "ubicacion": r[9]
         })
 
     cur.close()
@@ -949,7 +732,6 @@ def listar_productos():
 
 # ------------ MOSTRAR STOCK BAJO --------------------
 
-from flask import render_template_string
 
 STOCK_MINIMO = 5
 
@@ -1055,7 +837,116 @@ def api_precios_productos():
     from flask import jsonify
     return jsonify(precios)
 
-# --------------------
+
+
+# ============ APIs para filtros de vehículos ============
+
+@app.route('/api/marcas_vehiculo')
+def api_marcas_vehiculo():
+    """Devuelve todas las marcas de vehículos únicas"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT DISTINCT marca 
+        FROM vehiculo 
+        ORDER BY marca
+    """)
+    
+    marcas = [row[0] for row in cur.fetchall()]
+    
+    cur.close()
+    conn.close()
+    
+    return jsonify(marcas)
+
+
+@app.route('/api/modelos_vehiculo/<marca>')
+def api_modelos_vehiculo(marca):
+    """Devuelve los modelos de una marca específica"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT DISTINCT modelo 
+        FROM vehiculo 
+        WHERE marca = %s
+        ORDER BY modelo
+    """, (marca,))
+    
+    modelos = [row[0] for row in cur.fetchall()]
+    
+    cur.close()
+    conn.close()
+    
+    return jsonify(modelos)
+
+
+@app.route('/api/motores_vehiculo/<marca>/<modelo>')
+def api_motores_vehiculo(marca, modelo):
+    """Devuelve los motores de una marca y modelo específicos"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT DISTINCT motor 
+        FROM vehiculo 
+        WHERE marca = %s AND modelo = %s
+        ORDER BY motor
+    """, (marca, modelo))
+    
+    motores = [row[0] if row[0] else 'Sin motor especificado' for row in cur.fetchall()]
+    
+    cur.close()
+    conn.close()
+    
+    return jsonify(motores)
+
+
+@app.route('/api/productos_por_vehiculo')
+def api_productos_por_vehiculo():
+    """Devuelve IDs de productos variantes compatibles con un vehículo específico"""
+    marca = request.args.get('marca')
+    modelo = request.args.get('modelo', None)
+    motor = request.args.get('motor', None)
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Construir query dinámicamente
+    query = """
+        SELECT DISTINCT pv.id
+        FROM producto_variante pv
+        JOIN producto_vehiculo pve ON pve.id_producto_base = pv.id_producto_base
+        JOIN vehiculo v ON v.id = pve.id_vehiculo
+        WHERE v.marca = %s
+    """
+    
+    params = [marca]
+    
+    # Si hay modelo, agregarlo al filtro
+    if modelo:
+        query += " AND v.modelo = %s"
+        params.append(modelo)
+    
+    # Si hay motor, agregarlo al filtro
+    if motor:
+        if motor == 'Sin motor especificado':
+            query += " AND v.motor IS NULL"
+        else:
+            query += " AND v.motor = %s"
+            params.append(motor)
+    
+    cur.execute(query, params)
+    
+    ids = [row[0] for row in cur.fetchall()]
+    
+    cur.close()
+    conn.close()
+    
+    return jsonify(ids)
+
+# ------ FIN --------------
 
 
 if __name__ == "__main__":
