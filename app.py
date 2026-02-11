@@ -16,6 +16,8 @@ app = Flask(__name__)
 def test():
     return "FLASK FUNCIONA"
 
+# ----------------------------------------------
+
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
     return psycopg2.connect(database_url, sslmode="require")
@@ -39,6 +41,48 @@ def formatear_producto_con_dimensiones(producto_tuple):
     
     return (id_prod, display)
 
+def normalizar_texto(texto):
+    """
+    Normaliza un texto: capitaliza primera letra de cada palabra, 
+    quita espacios extras, y convierte a title case.
+    """
+    if not texto:
+        return texto
+    
+    # Quitar espacios al inicio y final
+    texto = texto.strip()
+    
+    # Quitar múltiples espacios
+    import re
+    texto = re.sub(r'\s+', ' ', texto)
+    
+    # Capitalizar cada palabra (Title Case)
+    texto = texto.title()
+    
+    return texto
+
+
+def encontrar_similitud(texto, lista_existentes):
+    """
+    Busca si hay algún texto similar en la lista.
+    Solo retorna coincidencia si es EXACTA (ignorando mayúsculas/minúsculas).
+    Retorna el texto similar si existe, o None.
+    """
+    if not texto or not lista_existentes:
+        return None
+    
+    texto_lower = texto.lower().strip()
+    
+    for existente in lista_existentes:
+        existente_lower = existente.lower().strip()
+        
+        # Solo coincidencia EXACTA (ignorando mayúsculas)
+        if texto_lower == existente_lower:
+            return existente
+    
+    return None
+
+# ---------------------------------
 
 @app.route("/health")
 def health():
@@ -122,13 +166,44 @@ def agregar_cliente():
 
 @app.route("/agregar_vehiculo", methods=["GET", "POST"])
 def agregar_vehiculo():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
     if request.method == "POST":
-        marca = request.form["marca"]
-        modelo = request.form["modelo"]
-        motor = request.form["motor"] or None
+        marca_raw = request.form["marca"]
+        modelo_raw = request.form["modelo"]
+        motor_raw = request.form["motor"] or None
         
-        conn = get_db_connection()
-        cur = conn.cursor()
+        # Obtener marcas y modelos existentes
+        cur.execute("SELECT DISTINCT marca FROM vehiculo")
+        marcas_existentes = [row[0] for row in cur.fetchall()]
+        
+        cur.execute("SELECT DISTINCT modelo FROM vehiculo")
+        modelos_existentes = [row[0] for row in cur.fetchall()]
+        
+        # Normalizar
+        marca = normalizar_texto(marca_raw)
+        modelo = normalizar_texto(modelo_raw)
+        motor = normalizar_texto(motor_raw) if motor_raw else None
+        
+        # Buscar similitudes
+        marca_similar = encontrar_similitud(marca, marcas_existentes)
+        modelo_similar = encontrar_similitud(modelo, modelos_existentes)
+        
+        mensaje_exito = None
+        mensaje_advertencia = None
+        
+        # Si hay similitudes, usar las existentes
+        if marca_similar and marca != marca_similar:
+            mensaje_advertencia = f'Se normalizó "{marca_raw}" a "{marca_similar}" (ya existente)'
+            marca = marca_similar
+        
+        if modelo_similar and modelo != modelo_similar:
+            if mensaje_advertencia:
+                mensaje_advertencia += f' y "{modelo_raw}" a "{modelo_similar}"'
+            else:
+                mensaje_advertencia = f'Se normalizó "{modelo_raw}" a "{modelo_similar}" (ya existente)'
+            modelo = modelo_similar
         
         try:
             cur.execute("""
@@ -136,21 +211,58 @@ def agregar_vehiculo():
                 VALUES (%s, %s, %s)
             """, (marca, modelo, motor))
             conn.commit()
+            
             mensaje_exito = f'Vehículo {marca} {modelo} agregado con éxito!'
+            if mensaje_advertencia:
+                mensaje_exito += f' ({mensaje_advertencia})'
         
         except Exception as e:
             conn.rollback()
-            mensaje_exito = None
-            mensaje_error = f"Error al guardar vehículo: {e}"
-        
-        finally:
+            mensaje_error = f"Error: {e}"
+            
+            # Recargar listas para mostrar formulario de nuevo
+            cur.execute("SELECT DISTINCT marca FROM vehiculo ORDER BY marca")
+            marcas_existentes = [row[0] for row in cur.fetchall()]
+            
+            cur.execute("SELECT DISTINCT modelo FROM vehiculo ORDER BY modelo")
+            modelos_existentes = [row[0] for row in cur.fetchall()]
+            
             cur.close()
             conn.close()
+            
+            return render_template('vehiculo.html',
+                                 marcas_existentes=marcas_existentes,
+                                 modelos_existentes=modelos_existentes,
+                                 mensaje_error=mensaje_error)
         
-        return render_template('vehiculo.html', 
+        # Recargar listas actualizadas
+        cur.execute("SELECT DISTINCT marca FROM vehiculo ORDER BY marca")
+        marcas_existentes = [row[0] for row in cur.fetchall()]
+        
+        cur.execute("SELECT DISTINCT modelo FROM vehiculo ORDER BY modelo")
+        modelos_existentes = [row[0] for row in cur.fetchall()]
+        
+        cur.close()
+        conn.close()
+        
+        return render_template('vehiculo.html',
+                             marcas_existentes=marcas_existentes,
+                             modelos_existentes=modelos_existentes,
                              mensaje_exito=mensaje_exito)
     
-    return render_template('vehiculo.html')
+    # GET: Cargar listas existentes
+    cur.execute("SELECT DISTINCT marca FROM vehiculo ORDER BY marca")
+    marcas_existentes = [row[0] for row in cur.fetchall()]
+    
+    cur.execute("SELECT DISTINCT modelo FROM vehiculo ORDER BY modelo")
+    modelos_existentes = [row[0] for row in cur.fetchall()]
+    
+    cur.close()
+    conn.close()
+    
+    return render_template('vehiculo.html',
+                         marcas_existentes=marcas_existentes,
+                         modelos_existentes=modelos_existentes)
 
 
 # ---------- PRODUCTO BASE ----------

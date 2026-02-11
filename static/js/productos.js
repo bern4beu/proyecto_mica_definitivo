@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ========== EVENTOS DE SELECTS EN CASCADA ==========
     
+    // Evento: Cambio de MARCA
     filtroMarca.addEventListener('change', async function() {
         const marca = this.value;
         
@@ -107,6 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Evento: Cambio de MODELO
     filtroModelo.addEventListener('change', async function() {
         const marca = filtroMarca.value;
         const modelo = this.value;
@@ -116,8 +118,8 @@ document.addEventListener('DOMContentLoaded', function() {
         filtroMotor.disabled = true;
         
         if (!modelo) {
-            productosCompatibles = [];
-            aplicarFiltros();
+            // Si no hay modelo, filtrar solo por marca
+            await cargarProductosCompatibles(marca, null, null);
             return;
         }
         
@@ -149,17 +151,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Evento: Cambio de MOTOR
     filtroMotor.addEventListener('change', async function() {
         const marca = filtroMarca.value;
         const modelo = filtroModelo.value;
         const motor = this.value;
         
-        if (!marca || !modelo) {
+        if (!marca) {
             productosCompatibles = [];
             aplicarFiltros();
             return;
         }
         
+        // Si no hay motor seleccionado, filtrar con marca y modelo (si existe)
+        if (!motor) {
+            await cargarProductosCompatibles(marca, modelo || null, null);
+            return;
+        }
+        
+        // Si hay motor, filtrar con todos los datos
         await cargarProductosCompatibles(marca, modelo, motor);
     });
     
@@ -167,8 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     btnLimpiarVehiculo.addEventListener('click', function() {
         filtroMarca.value = '';
-        filtroModelo.innerHTML = '<option value="">-- Seleccione marca --</option>';
-        filtroMotor.innerHTML = '<option value="">-- Seleccione modelo --</option>';
+        filtroModelo.innerHTML = '<option value="">-- Todos --</option>';
+        filtroMotor.innerHTML = '<option value="">-- Todos --</option>';
         filtroModelo.disabled = true;
         filtroMotor.disabled = true;
         productosCompatibles = [];
@@ -180,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function aplicarFiltros() {
         const busqueda = searchInput.value.toLowerCase().trim();
         const soloStockBajo = filtroStockBajo.checked;
-        const hayFiltroVehiculo = productosCompatibles.length > 0 || (filtroMarca.value && filtroModelo.value);
+        const hayFiltroVehiculo = productosCompatibles.length > 0 || filtroMarca.value;
         
         let contadorVisibles = 0;
         

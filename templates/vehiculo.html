@@ -11,38 +11,52 @@
     <div class="container">
         <h2>Agregar Vehículo</h2>
         
-        <div id="mensaje" class="mensaje {% if mensaje_exito %}exito show{% endif %}">
-            {{ mensaje_exito }}
+        <div id="mensaje" class="mensaje {% if mensaje_exito %}exito show{% elif mensaje_error %}error show{% endif %}">
+            {{ mensaje_exito or mensaje_error }}
         </div>
         
         <form id="formVehiculo" method="POST">
             <div class="form-group">
                 <label for="marca">Marca: *</label>
                 <input type="text" 
-                       id="marca" 
-                       name="marca" 
-                       placeholder="Ej: Ford, Chevrolet, Toyota"
-                       autocomplete="off"
-                       required>
+                    id="marca" 
+                    name="marca" 
+                    list="listaMarcas"
+                    placeholder="Ej: Ford, Chevrolet, Toyota"
+                    autocomplete="off"
+                    required>
+                <datalist id="listaMarcas">
+                    {% for marca in marcas_existentes %}
+                    <option value="{{ marca }}">
+                    {% endfor %}
+                </datalist>
+                <small style="color: #666; font-size: 12px;">💡 Empezá a escribir para ver sugerencias</small>
             </div>
             
             <div class="form-group">
                 <label for="modelo">Modelo: *</label>
                 <input type="text" 
-                       id="modelo" 
-                       name="modelo" 
-                       placeholder="Ej: Focus, Corsa, Corolla"
-                       autocomplete="off"
-                       required>
+                    id="modelo" 
+                    name="modelo" 
+                    list="listaModelos"
+                    placeholder="Ej: Focus, Corsa, Corolla"
+                    autocomplete="off"
+                    required>
+                <datalist id="listaModelos">
+                    {% for modelo in modelos_existentes %}
+                    <option value="{{ modelo }}">
+                    {% endfor %}
+                </datalist>
+                <small style="color: #666; font-size: 12px;">💡 Empezá a escribir para ver sugerencias</small>
             </div>
             
             <div class="form-group">
-                <label for="motor">Motor: (opcional)</label>
+                <label for="motor">Motor: *</label>
                 <input type="text" 
-                       id="motor" 
-                       name="motor" 
-                       placeholder="Ej: 1.6, 2.0 TDI"
-                       autocomplete="off">
+                    id="motor" 
+                    name="motor" 
+                    placeholder="Ej: 1.6, 2.0 TDI"
+                    autocomplete="off">
             </div>
             
             <button type="submit" class="btn btn-primary">Agregar Vehículo</button>
