@@ -6,18 +6,24 @@
     <title>Detalle de Venta #{{ venta.id }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/detalle_venta.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lightbox.css') }}">
+    
+    <!-- CSS de impresión: solo se aplica al imprimir -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/print.css') }}" media="print">
 </head>
 <body>
     
+    <!-- ===== VISTA NORMAL (pantalla) ===== -->
     <div class="container" style="max-width: 900px;">
         
-        <!-- Header con info de la venta -->
+        <!-- Botones de acción -->
         <div class="factura-header">
             <div>
                 <h2>Venta #{{ venta.id }}</h2>
                 <p class="fecha">{{ venta.fecha }}</p>
             </div>
             <div class="acciones-header">
+                <button onclick="imprimirRemito()" class="btn btn-primary">🖨️ Imprimir remito</button>
                 <a href="/ventas" class="btn btn-secondary">← Volver a ventas</a>
             </div>
         </div>
@@ -31,7 +37,6 @@
         <!-- Productos vendidos -->
         <div class="productos-section">
             <h3>Productos</h3>
-            
             <div class="table-container">
                 <table class="tabla-detalle">
                     <thead>
@@ -72,5 +77,85 @@
         
     </div>
     
+        
+    <!-- ===== REMITO (solo visible al imprimir) ===== -->
+    <div id="remito" style="display: none;">
+        
+        <!-- Header -->
+        <div class="remito-header">
+            <div>
+                <p class="remito-titulo">REMITO</p>
+                <p class="remito-numero">N° {{ venta.id }}</p>
+            </div>
+            <div class="remito-fecha">
+                <p><strong>Fecha:</strong> {{ venta.fecha }}</p>
+            </div>
+        </div>
+        
+        <!-- Cliente -->
+        <div class="remito-cliente">
+            <h3>Cliente</h3>
+            <p>{{ venta.cliente }}</p>
+        </div>
+        
+        <!-- Tabla de productos -->
+        <table class="remito-tabla">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th class="text-right">Precio Unit.</th>
+                    <th class="text-center">Cantidad</th>
+                    <th class="text-right">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in detalles %}
+                <tr>
+                    <td>{{ d.producto }}</td>
+                    <td class="text-right">${{ d.precio_unitario }}</td>
+                    <td class="text-center">{{ d.cantidad }}</td>
+                    <td class="text-right">${{ d.subtotal }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Total -->
+        <div class="remito-total">
+            <div class="remito-total-box">
+                <div class="remito-total-row">
+                    <span class="remito-total-label">TOTAL</span>
+                    <span class="remito-total-monto">${{ venta.total }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Firmas -->
+        <div class="remito-firma">
+            <div class="remito-firma-item">
+                <div class="remito-firma-linea"></div>
+                <p class="remito-firma-label">Firma del vendedor</p>
+            </div>
+            <div class="remito-firma-item">
+                <div class="remito-firma-linea"></div>
+                <p class="remito-firma-label">Firma del cliente</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="remito-footer">
+            <p>Documento no válido como factura</p>
+        </div>
+        
+    </div>
+    
+    <script>
+        function imprimirRemito() {
+            window.print();
+        }
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/lightbox.js') }}"></script>
+
 </body>
 </html>

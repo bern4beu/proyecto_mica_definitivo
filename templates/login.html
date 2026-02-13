@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body class="login-body">
+    
+    <div class="login-container">
+        
+        <div class="login-header">
+            <h1>⚙️</h1>
+            <h2>Sistema de Gestión</h2>
+            <p>Iniciá sesión para continuar</p>
+        </div>
+        
+        {% if error %}
+        <div class="login-error">
+            ⚠️ {{ error }}
+        </div>
+        {% endif %}
+        
+        <form method="POST" id="formLogin">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email"
+                       id="email"
+                       name="email"
+                       placeholder="tu@email.com"
+                       required
+                       autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Contraseña:</label>
+                <div class="password-wrapper">
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           placeholder="••••••••"
+                           required>
+                    <button type="button" 
+                            id="togglePassword"
+                            class="toggle-password">👁️</button>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                Iniciar Sesión
+            </button>
+        </form>
+        
+    </div>
+    
+    <script>
+        // Mostrar/ocultar contraseña
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const input = document.getElementById('password');
+            input.type = input.type === 'password' ? 'text' : 'password';
+            this.textContent = input.type === 'password' ? '👁️' : '🙈';
+        });
+    </script>
+    
+</body>
+</html>

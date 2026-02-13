@@ -3,20 +3,83 @@
 # Stock se descuenta y total se calcula automáticamente.
 
 
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, redirect, url_for, session
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import os
 from dotenv import load_dotenv
+from supabase import create_client
 
 load_dotenv()
 
 app = Flask(__name__)
+
+# Clave secreta para sesiones (necesaria para Flask-Login)
+app.secret_key = os.environ.get('SECRET_KEY', 'clave-desarrollo-cambiar-en-produccion')
+
+# Configurar Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # Redirigir al login si no está autenticado
+login_manager.login_message = 'Iniciá sesión para acceder al sistema'
+
+# ============ CLASE USUARIO ============
+
+class Usuario(UserMixin):
+    """
+    Clase que representa un usuario logueado.
+    UserMixin agrega métodos necesarios para Flask-Login:
+    - is_authenticated
+    - is_active
+    - get_id()
+    """
+    def __init__(self, id, nombre, email, rol, activo):
+        self.id = id
+        self.nombre = nombre
+        self.email = email
+        self.rol = rol
+        self.activo = activo
+    
+    def es_admin(self):
+        return self.rol == 'admin'
+
+
+@login_manager.user_loader
+def cargar_usuario(user_id):
+    """
+    Flask-Login llama a esta función en cada request
+    para cargar el usuario desde la DB usando el ID guardado en la sesión.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT id, nombre, email, rol, activo 
+        FROM usuario 
+        WHERE id = %s AND activo = TRUE
+    """, (user_id,))
+    
+    u = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if u:
+        return Usuario(u[0], u[1], u[2], u[3], u[4])
+    return None
+
+
 
 @app.route("/test")
 def test():
     return "FLASK FUNCIONA"
 
 # ----------------------------------------------
+
+def get_supabase_client():
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
+    return create_client(url, key)
 
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
@@ -90,11 +153,68 @@ def health():
 
 
 
+# ============ LOGIN / LOGOUT ============
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # Si ya está logueado, redirigir al inicio
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        email = request.form['email'].strip().lower()
+        password = request.form['password']
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, nombre, email, password_hash, rol, activo
+            FROM usuario
+            WHERE email = %s
+        """, (email,))
+        
+        u = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        # Verificar usuario y contraseña
+        if not u:
+            return render_template('login.html',
+                                 error='Email o contraseña incorrectos')
+        
+        if not u[5]:  # activo = FALSE
+            return render_template('login.html',
+                                 error='Tu cuenta está desactivada. Contactá al administrador')
+        
+        if not check_password_hash(u[3], password):
+            return render_template('login.html',
+                                 error='Email o contraseña incorrectos')
+        
+        # Login exitoso
+        usuario = Usuario(u[0], u[1], u[2], u[4], u[5])
+        login_user(usuario, remember=True)
+        
+        # Redirigir a la página que intentaba visitar, o al inicio
+        next_page = request.args.get('next')
+        return redirect(next_page or url_for('home'))
+    
+    return render_template('login.html')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
 
 # ----------- INICIO ---------------------
 
 
 @app.route('/')
+@login_required
 def home():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -137,11 +257,65 @@ def home():
     
     return render_template('home.html', stats=stats)
 
+# ----- CAMBIAR PASSWORD --------
+
+@app.route('/cambiar_password', methods=['GET', 'POST'])
+@login_required
+def cambiar_password():
+    error = None
+    exito = None
+    
+    if request.method == 'POST':
+        password_actual = request.form['password_actual']
+        password_nuevo = request.form['password_nuevo']
+        password_confirmar = request.form['password_confirmar']
+        
+        # Validaciones
+        if password_nuevo != password_confirmar:
+            error = 'Las contraseñas nuevas no coinciden'
+        
+        elif len(password_nuevo) < 8:
+            error = 'La nueva contraseña debe tener al menos 8 caracteres'
+        
+        else:
+            # Verificar contraseña actual
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            cur.execute("""
+                SELECT password_hash FROM usuario WHERE id = %s
+            """, (current_user.id,))
+            
+            u = cur.fetchone()
+            
+            if not check_password_hash(u[0], password_actual):
+                error = 'La contraseña actual es incorrecta'
+                cur.close()
+                conn.close()
+            else:
+                # Actualizar contraseña
+                nuevo_hash = generate_password_hash(password_nuevo)
+                
+                cur.execute("""
+                    UPDATE usuario SET password_hash = %s WHERE id = %s
+                """, (nuevo_hash, current_user.id))
+                
+                conn.commit()
+                cur.close()
+                conn.close()
+                
+                exito = '¡Contraseña actualizada correctamente!'
+    
+    return render_template('cambiar_password.html',
+                         error=error,
+                         exito=exito)
+
 
 # ---------- CLIENTES ----------
 
 
 @app.route('/clientes', methods=['GET', 'POST'])
+@login_required
 def agregar_cliente():
     if request.method == 'POST':
         nombre = request.form['nombre']
@@ -165,6 +339,7 @@ def agregar_cliente():
 
 
 @app.route("/agregar_vehiculo", methods=["GET", "POST"])
+@login_required
 def agregar_vehiculo():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -273,6 +448,7 @@ def to_numeric_or_none(value):
 
 
 @app.route('/producto_base', methods=['GET', 'POST'])
+@login_required
 def agregar_producto_base():
     if request.method == 'POST':
         nombre = request.form['nombre']
@@ -283,13 +459,41 @@ def agregar_producto_base():
         largo = to_numeric_or_none(request.form['largo'])
         diametro = to_numeric_or_none(request.form['diametro'])
         
+        imagen_url = None
+        
+        # Manejar imagen si se subió una
+        imagen = request.files.get('imagen')
+        if imagen and imagen.filename:
+            try:
+                supabase = get_supabase_client()
+                
+                # Crear nombre único para el archivo
+                import uuid
+                extension = imagen.filename.rsplit('.', 1)[-1].lower()
+                nombre_archivo = f"base_{uuid.uuid4().hex}.{extension}"
+                
+                # Subir imagen a Supabase Storage
+                imagen_bytes = imagen.read()
+                supabase.storage.from_('productos').upload(
+                    nombre_archivo,
+                    imagen_bytes,
+                    {"content-type": imagen.content_type}
+                )
+                
+                # Obtener URL pública
+                imagen_url = supabase.storage.from_('productos').get_public_url(nombre_archivo)
+                
+            except Exception as e:
+                print(f"Error al subir imagen: {e}")
+                imagen_url = None
+        
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO producto_base
-            (nombre, descripcion, alto, ancho, largo, diametro)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (nombre, descripcion, alto, ancho, largo, diametro))
+            (nombre, descripcion, alto, ancho, largo, diametro, imagen_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (nombre, descripcion, alto, ancho, largo, diametro, imagen_url))
         conn.commit()
         cur.close()
         conn.close()
@@ -305,6 +509,7 @@ def agregar_producto_base():
 
 
 @app.route('/producto_vehiculo', methods=['GET', 'POST'])
+@login_required
 def asociar_producto_vehiculo():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -368,6 +573,7 @@ def asociar_producto_vehiculo():
 
 
 @app.route('/proveedor', methods=['GET', 'POST'])
+@login_required
 def agregar_proveedor():
     if request.method == 'POST':
         nombre = request.form['nombre']
@@ -394,6 +600,7 @@ def agregar_proveedor():
 from psycopg2 import errors
 
 @app.route('/producto_variante', methods=['GET', 'POST'])
+@login_required
 def agregar_producto_variante():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -500,6 +707,7 @@ def agregar_producto_variante():
 
 
 @app.route('/venta', methods=['GET', 'POST'])
+@login_required
 def agregar_venta():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -678,6 +886,7 @@ def agregar_venta():
 
 
 @app.route('/ventas')
+@login_required
 def listar_ventas_app():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -712,6 +921,7 @@ def listar_ventas_app():
 
 
 @app.route('/venta/<int:id_venta>')
+@login_required
 def ver_detalle_venta(id_venta):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -796,6 +1006,7 @@ def ver_detalle_venta(id_venta):
 
 
 @app.route("/productos")
+@login_required
 def listar_productos():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -811,7 +1022,9 @@ def listar_productos():
             pv.precio            AS precio_venta,
             pv.stock             AS stock,
             pr.nombre            AS proveedor,
-            pv.ubicacion         AS ubicacion
+            pv.ubicacion         AS ubicacion,
+            pv.imagen_url        AS imagen_url,
+            pv.codigo            AS codigo   
         FROM producto_variante pv
         JOIN producto_base pb
             ON pb.id = pv.id_producto_base
@@ -832,7 +1045,9 @@ def listar_productos():
             "precio": f"{r[6]:.2f}",
             "stock": r[7],
             "proveedor": r[8],
-            "ubicacion": r[9]
+            "ubicacion": r[9],
+            "imagen_url": r[10],
+            "codigo": r[11]
         })
 
     cur.close()
@@ -848,6 +1063,7 @@ def listar_productos():
 STOCK_MINIMO = 5
 
 @app.route("/stock-bajo")
+@login_required
 def stock_bajo():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -887,6 +1103,7 @@ def stock_bajo():
 # ------------------- PRODUCTOS MÁS VENDIDOS ---------------
 
 @app.route("/productos-mas-vendidos")
+@login_required
 def productos_mas_vendidos():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -924,6 +1141,7 @@ def productos_mas_vendidos():
 #---- PRUEBA, BORRAR DSP --------
 
 @app.route("/test-db")
+@login_required
 def test_db():
     try:
         conn = get_db_connection()
@@ -936,6 +1154,7 @@ def test_db():
 # --------- ENDPOINT API PARA PRECIOS ---------------
 
 @app.route('/api/precios_productos')
+@login_required
 def api_precios_productos():
     conn = get_db_connection()
     cur = conn.cursor()
@@ -954,6 +1173,7 @@ def api_precios_productos():
 # ============ APIs para filtros de vehículos ============
 
 @app.route('/api/marcas_vehiculo')
+@login_required
 def api_marcas_vehiculo():
     """Devuelve todas las marcas de vehículos únicas"""
     conn = get_db_connection()
@@ -974,6 +1194,7 @@ def api_marcas_vehiculo():
 
 
 @app.route('/api/modelos_vehiculo/<marca>')
+@login_required
 def api_modelos_vehiculo(marca):
     """Devuelve los modelos de una marca específica"""
     conn = get_db_connection()
@@ -995,6 +1216,7 @@ def api_modelos_vehiculo(marca):
 
 
 @app.route('/api/motores_vehiculo/<marca>/<modelo>')
+@login_required
 def api_motores_vehiculo(marca, modelo):
     """Devuelve los motores de una marca y modelo específicos"""
     conn = get_db_connection()
@@ -1016,6 +1238,7 @@ def api_motores_vehiculo(marca, modelo):
 
 
 @app.route('/api/productos_por_vehiculo')
+@login_required
 def api_productos_por_vehiculo():
     """Devuelve IDs de productos variantes compatibles con un vehículo específico"""
     marca = request.args.get('marca')
@@ -1057,6 +1280,315 @@ def api_productos_por_vehiculo():
     conn.close()
     
     return jsonify(ids)
+
+
+# =============== EDITAR PRODUCTO VARIANTE ===============
+
+@app.route('/editar_variante/<int:id_variante>', methods=['GET', 'POST'])
+@login_required
+def editar_variante(id_variante):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    if request.method == 'POST':
+        # Inicializar variables SIEMPRE al principio
+        mensaje_exito = None
+        mensaje_error = None
+        imagen_url = None
+        
+        marca = normalizar_texto(request.form['marca'])
+        calidad = request.form['calidad'] or None
+        precio = request.form['precio']
+        precio_compra = request.form['precio_compra'] or None
+        stock = request.form['stock']
+        ubicacion = request.form['ubicacion'] or None
+        id_proveedor = request.form['id_proveedor'] or None
+        
+        # Manejar imagen si se subió una
+        imagen = request.files.get('imagen')
+        print(f"DEBUG - Imagen recibida: {imagen}")
+        print(f"DEBUG - Filename: {imagen.filename if imagen else 'None'}")
+
+        if imagen and imagen.filename:
+            try:
+                supabase = get_supabase_client()
+                print(f"DEBUG - Supabase client creado: {supabase}")
+                
+                import uuid
+                extension = imagen.filename.rsplit('.', 1)[-1].lower()
+                nombre_archivo = f"variante_{id_variante}_{uuid.uuid4().hex}.{extension}"
+                print(f"DEBUG - Nombre archivo: {nombre_archivo}")
+                
+                imagen_bytes = imagen.read()
+                print(f"DEBUG - Tamaño imagen: {len(imagen_bytes)} bytes")
+                
+                resultado = supabase.storage.from_('productos').upload(
+                    nombre_archivo,
+                    imagen_bytes,
+                    {"content-type": imagen.content_type}
+                )
+                print(f"DEBUG - Resultado upload: {resultado}")
+                
+                imagen_url = supabase.storage.from_('productos').get_public_url(nombre_archivo)
+                print(f"DEBUG - URL generada: {imagen_url}")
+                
+            except Exception as e:
+                print(f"ERROR al subir imagen: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        try:
+            if imagen_url:
+                cur.execute("""
+                    UPDATE producto_variante
+                    SET marca = %s,
+                        calidad = %s,
+                        precio = %s,
+                        precio_compra = %s,
+                        stock = %s,
+                        ubicacion = %s,
+                        id_proveedor = %s,
+                        imagen_url = %s
+                    WHERE id = %s
+                """, (marca, calidad, precio, precio_compra,
+                    stock, ubicacion, id_proveedor, imagen_url, id_variante))
+            else:
+                cur.execute("""
+                    UPDATE producto_variante
+                    SET marca = %s,
+                        calidad = %s,
+                        precio = %s,
+                        precio_compra = %s,
+                        stock = %s,
+                        ubicacion = %s,
+                        id_proveedor = %s
+                    WHERE id = %s
+                """, (marca, calidad, precio, precio_compra,
+                    stock, ubicacion, id_proveedor, id_variante))
+            
+            conn.commit()
+            mensaje_exito = '¡Producto actualizado correctamente!'
+            
+        except Exception as e:
+            conn.rollback()
+            mensaje_error = f'Error al actualizar: {e}'
+        
+        # Recargar datos actualizados
+        cur.execute("""
+            SELECT
+                pv.id,
+                pb.nombre AS producto_base,
+                pv.marca,
+                pv.calidad,
+                pv.precio,
+                pv.precio_compra,
+                pv.stock,
+                pv.ubicacion,
+                pv.id_proveedor,
+                pv.imagen_url
+            FROM producto_variante pv
+            JOIN producto_base pb ON pb.id = pv.id_producto_base
+            WHERE pv.id = %s
+        """, (id_variante,))
+
+        v = cur.fetchone()
+        variante = {
+            "id": v[0],
+            "producto_base": v[1],
+            "marca": v[2],
+            "calidad": v[3],
+            "precio": v[4],
+            "precio_compra": v[5],
+            "stock": v[6],
+            "ubicacion": v[7],
+            "id_proveedor": v[8],
+            "imagen_url": v[9]
+        }
+        
+        cur.execute("SELECT id, nombre FROM proveedor ORDER BY nombre")
+        proveedores = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        return render_template('editar_variante.html',
+                             variante=variante,
+                             proveedores=proveedores,
+                             mensaje_exito=mensaje_exito,
+                             mensaje_error=mensaje_error)
+    
+    # GET: Cargar datos del producto
+    cur.execute("""
+        SELECT
+            pv.id,
+            pb.nombre AS producto_base,
+            pv.marca,
+            pv.calidad,
+            pv.precio,
+            pv.precio_compra,
+            pv.stock,
+            pv.ubicacion,
+            pv.id_proveedor
+        FROM producto_variante pv
+        JOIN producto_base pb ON pb.id = pv.id_producto_base
+        WHERE pv.id = %s
+    """, (id_variante,))
+    
+    v = cur.fetchone()
+    
+    # Si no existe el producto
+    if not v:
+        cur.close()
+        conn.close()
+        return '''
+        <div style="font-family: Arial; padding: 40px; text-align: center;">
+            <h2>Producto no encontrado</h2>
+            <a href="/productos">Volver a productos</a>
+        </div>
+        '''
+    
+    variante = {
+        "id": v[0],
+        "producto_base": v[1],
+        "marca": v[2],
+        "calidad": v[3],
+        "precio": v[4],
+        "precio_compra": v[5],
+        "stock": v[6],
+        "ubicacion": v[7],
+        "id_proveedor": v[8]
+    }
+    
+    cur.execute("SELECT id, nombre FROM proveedor ORDER BY nombre")
+    proveedores = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
+    return render_template('editar_variante.html',
+                         variante=variante,
+                         proveedores=proveedores)
+
+
+
+# ============ GESTIÓN DE USUARIOS (solo admin) ============
+
+def solo_admin(f):
+    """Decorador que permite acceso solo a admins"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.es_admin():
+            return redirect(url_for('home'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route('/usuarios')
+@login_required
+@solo_admin
+def listar_usuarios():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT id, nombre, email, rol, activo,
+               TO_CHAR(creado_en, 'DD/MM/YYYY') as creado_en
+        FROM usuario
+        ORDER BY creado_en DESC
+    """)
+    
+    usuarios = []
+    for u in cur.fetchall():
+        usuarios.append({
+            "id": u[0],
+            "nombre": u[1],
+            "email": u[2],
+            "rol": u[3],
+            "activo": u[4],
+            "creado_en": u[5]
+        })
+    
+    cur.close()
+    conn.close()
+    
+    return render_template('usuarios.html', usuarios=usuarios)
+
+
+@app.route('/usuarios/crear', methods=['POST'])
+@login_required
+@solo_admin
+def crear_usuario():
+    nombre = request.form['nombre'].strip()
+    email = request.form['email'].strip().lower()
+    password = request.form['password']
+    rol = request.form['rol']
+    
+    # Validaciones
+    if len(password) < 8:
+        return redirect(url_for('listar_usuarios') + '?error=La contraseña debe tener al menos 8 caracteres')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        password_hash = generate_password_hash(password)
+        
+        cur.execute("""
+            INSERT INTO usuario (nombre, email, password_hash, rol)
+            VALUES (%s, %s, %s, %s)
+        """, (nombre, email, password_hash, rol))
+        
+        conn.commit()
+        mensaje = f'Usuario {nombre} creado correctamente'
+        
+    except Exception as e:
+        conn.rollback()
+        mensaje = f'Error: ese email ya existe'
+    
+    finally:
+        cur.close()
+        conn.close()
+    
+    return redirect(url_for('listar_usuarios',
+                           mensaje_exito=mensaje))
+
+
+@app.route('/usuarios/desactivar/<int:id_usuario>')
+@login_required
+@solo_admin
+def desactivar_usuario(id_usuario):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        UPDATE usuario SET activo = FALSE WHERE id = %s
+    """, (id_usuario,))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return redirect(url_for('listar_usuarios'))
+
+
+@app.route('/usuarios/activar/<int:id_usuario>')
+@login_required
+@solo_admin
+def activar_usuario(id_usuario):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        UPDATE usuario SET activo = TRUE WHERE id = %s
+    """, (id_usuario,))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return redirect(url_for('listar_usuarios'))
+
 
 # ------ FIN --------------
 

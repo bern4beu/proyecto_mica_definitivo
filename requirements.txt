@@ -2,3 +2,5 @@ flask
 gunicorn
 psycopg2-binary
 python-dotenv
+supabase
+flask-login

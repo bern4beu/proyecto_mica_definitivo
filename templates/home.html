@@ -13,8 +13,26 @@
         
         <!-- Header -->
         <div class="dashboard-header">
-            <h1>Sistema de Gestión</h1>
-            <p class="subtitle">Panel de control</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h1>Sistema de Gestión</h1>
+                    <p class="subtitle">Bienvenido, {{ current_user.nombre }} 👋</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <a href="/cambiar_password" style="background: rgba(255,255,255,0.2); color: white; 
+                                                        padding: 10px 20px; border-radius: 8px; 
+                                                        text-decoration: none; font-size: 14px;
+                                                        border: 1px solid rgba(255,255,255,0.4);">
+                        🔑 Cambiar contraseña
+                    </a>
+                    <a href="/logout" style="background: rgba(255,255,255,0.2); color: white; 
+                                            padding: 10px 20px; border-radius: 8px; 
+                                            text-decoration: none; font-size: 14px;
+                                            border: 1px solid rgba(255,255,255,0.4);">
+                        Cerrar sesión
+                    </a>
+                </div>
+            </div>
         </div>
         
         <!-- Estadísticas principales -->
@@ -159,6 +177,13 @@
                     <div class="menu-icon-small">🚗</div>
                     <span>Vehículos</span>
                 </a>
+
+                {% if current_user.es_admin() %}
+                <a href="/usuarios" class="menu-card-small">
+                    <div class="menu-icon-small">👥</div>
+                    <span>Usuarios</span>
+                </a>
+                {% endif %}
                 
             </div>
         </div>

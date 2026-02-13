@@ -357,3 +357,90 @@ select:disabled {
         grid-template-columns: 1fr;
     }
 }
+
+/* Panel de usuarios */
+.nuevo-usuario-form {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border: 1px solid #e0e0e0;
+}
+
+.nuevo-usuario-form h3 {
+    margin: 0 0 20px 0;
+    color: #333;
+}
+
+/* Badge de rol */
+.badge-rol {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.badge-rol.admin {
+    background: #e8eaf6;
+    color: #3949ab;
+}
+
+.badge-rol.vendedor {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Badge de estado */
+.badge-estado {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.badge-estado.activo {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.badge-estado.inactivo {
+    background: #ffebee;
+    color: #c62828;
+}
+
+/* Botones de acción en tabla */
+.btn-accion {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-accion.desactivar {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.btn-accion.desactivar:hover {
+    background: #ffcdd2;
+}
+
+.btn-accion.activar {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.btn-accion.activar:hover {
+    background: #c8e6c9;
+}
+
+@media (max-width: 768px) {
+    .nuevo-usuario-form > form > div {
+        grid-template-columns: 1fr !important;
+    }
+}

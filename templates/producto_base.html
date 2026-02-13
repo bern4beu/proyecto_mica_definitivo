@@ -15,7 +15,7 @@
             {{ mensaje_exito }}
         </div>
         
-        <form id="formProductoBase" method="POST">
+        <form id="formProductoBase" method="POST" enctype="multipart/form-data">
             
             <div class="form-group">
                 <label for="nombre">Nombre: *</label>
@@ -80,6 +80,17 @@
                        autocomplete="off">
             </div>
             
+            <div class="form-group">
+                <label for="imagen">Imagen del producto:</label>
+                <input type="file" 
+                    id="imagen" 
+                    name="imagen"
+                    accept="image/*">
+                <small style="color: #666; font-size: 12px;">
+                    💡 Opcional. Formatos: JPG, PNG, WEBP. Máximo 2MB.
+                </small>
+            </div>
+
             <button type="submit" class="btn btn-primary">Agregar Producto Base</button>
         </form>
         

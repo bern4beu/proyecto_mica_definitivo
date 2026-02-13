@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Producto Variante</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lightbox.css') }}">
+</head>
+<body>
+    
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2>✏️ Editar Producto Variante</h2>
+            <a href="/productos" class="btn btn-secondary">← Volver a productos</a>
+        </div>
+        
+        <!-- Info del producto base (no editable) -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 20px; border-radius: 8px; margin-bottom: 30px; color: white;">
+            <p style="margin: 0; font-size: 14px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px;">
+                Producto Base
+            </p>
+            <h3 style="margin: 8px 0 0 0; font-size: 22px;">{{ variante.producto_base }}</h3>
+        </div>
+        
+        <!-- Mensajes -->
+        <div id="mensaje" class="mensaje {% if mensaje_exito %}exito show{% elif mensaje_error %}error show{% endif %}">
+            {{ mensaje_exito or mensaje_error }}
+        </div>
+        
+        <!-- Formulario de edición -->
+        <form id="formEditarVariante" method="POST" enctype="multipart/form-data">
+            
+            <div class="form-group">
+                <label for="marca">Marca: *</label>
+                <input type="text"
+                       id="marca"
+                       name="marca"
+                       value="{{ variante.marca }}"
+                       autocomplete="off"
+                       required>
+            </div>
+            
+            <div class="form-group">
+                <label for="calidad">Calidad:</label>
+                <input type="text"
+                       id="calidad"
+                       name="calidad"
+                       value="{{ variante.calidad or '' }}"
+                       autocomplete="off"
+                       placeholder="Ej: Original, Alternativa, Premium">
+            </div>
+            
+            <div class="form-group">
+                <label for="precio">Precio de venta: *</label>
+                <input type="number"
+                       id="precio"
+                       name="precio"
+                       value="{{ variante.precio }}"
+                       step="0.01"
+                       min="0"
+                       required>
+            </div>
+            
+            <div class="form-group">
+                <label for="precio_compra">Precio de compra:</label>
+                <input type="number"
+                       id="precio_compra"
+                       name="precio_compra"
+                       value="{{ variante.precio_compra or '' }}"
+                       step="0.01"
+                       min="0"
+                       placeholder="0.00">
+            </div>
+            
+            <div class="form-group">
+                <label for="stock">Stock: *</label>
+                <input type="number"
+                       id="stock"
+                       name="stock"
+                       value="{{ variante.stock }}"
+                       min="0"
+                       required>
+            </div>
+            
+            <div class="form-group">
+                <label for="ubicacion">Ubicación:</label>
+                <input type="text"
+                       id="ubicacion"
+                       name="ubicacion"
+                       value="{{ variante.ubicacion or '' }}"
+                       autocomplete="off"
+                       placeholder="Ej: Estante A3, Depósito">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_proveedor">Proveedor:</label>
+                <select id="id_proveedor" name="id_proveedor">
+                    <option value="">-- Sin proveedor --</option>
+                    {% for prov in proveedores %}
+                    <option value="{{ prov[0] }}" 
+                            {% if prov[0] == variante.id_proveedor %}selected{% endif %}>
+                        {{ prov[1] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Imagen actual:</label>
+                {% if variante.imagen_url %}
+                <div style="margin-bottom: 15px;">
+                    <img src="{{ variante.imagen_url }}" 
+                        alt="Imagen del producto"
+                        class="imagen-producto"
+                        style="max-width: 200px; max-height: 200px; border-radius: 8px; 
+                                border: 1px solid #ddd; cursor: pointer; transition: transform 0.2s;"
+                        onmouseover="this.style.transform='scale(1.05)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                {% else %}
+                <p style="color: #999; font-style: italic;">Sin imagen</p>
+                {% endif %}
+                
+                <label for="imagen">
+                    {% if variante.imagen_url %}Cambiar imagen:{% else %}Agregar imagen:{% endif %}
+                </label>
+                <input type="file"
+                    id="imagen"
+                    name="imagen"
+                    accept="image/*">
+                <small style="color: #666; font-size: 12px;">
+                    💡 Opcional. Formatos: JPG, PNG, WEBP. Máximo 2MB.
+                </small>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 30px;">
+                <button type="submit" class="btn btn-primary">💾 Guardar cambios</button>
+                <a href="/productos" class="btn btn-secondary">Cancelar</a>
+            </div>
+            
+        </form>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/editar_variante.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/lightbox.js') }}"></script>
+    
+</body>
+</html>

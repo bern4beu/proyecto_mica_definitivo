@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tablas.css') }}">
+</head>
+<body>
+
+    <div class="container" style="max-width: 900px;">
+
+        <div class="header-section">
+            <h2>👥 Gestión de Usuarios</h2>
+            <a href="/" class="btn btn-secondary">← Volver al inicio</a>
+        </div>
+
+        <!-- Mensaje -->
+        <div id="mensaje" class="mensaje {% if mensaje_exito %}exito show{% elif mensaje_error %}error show{% endif %}">
+            {{ mensaje_exito or mensaje_error }}
+        </div>
+
+        <!-- Formulario nuevo usuario -->
+        <div class="nuevo-usuario-form">
+            <h3>➕ Crear nuevo usuario</h3>
+
+            <form method="POST" action="/usuarios/crear" id="formNuevoUsuario">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="nombre">Nombre:</label>
+                        <input type="text"
+                               id="nombre"
+                               name="nombre"
+                               placeholder="Nombre del usuario"
+                               required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="email">Email:</label>
+                        <input type="email"
+                               id="email"
+                               name="email"
+                               placeholder="email@ejemplo.com"
+                               required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="password">Contraseña inicial:</label>
+                        <input type="text"
+                               id="password"
+                               name="password"
+                               placeholder="Mínimo 8 caracteres"
+                               required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="rol">Rol:</label>
+                        <select id="rol" name="rol">
+                            <option value="vendedor">Vendedor</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 20px;">
+                    Crear Usuario
+                </button>
+
+            </form>
+        </div>
+
+        <!-- Lista de usuarios -->
+        <h3 style="margin: 30px 0 15px 0;">Usuarios del sistema</h3>
+
+        <div class="table-container">
+            <table class="tabla-moderna">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th class="text-center">Estado</th>
+                        <th>Creado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td>{{ u.nombre }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            <span class="badge-rol {{ u.rol }}">
+                                {{ '👑 Admin' if u.rol == 'admin' else '👤 Vendedor' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge-estado {{ 'activo' if u.activo else 'inactivo' }}">
+                                {{ '✅ Activo' if u.activo else '❌ Inactivo' }}
+                            </span>
+                        </td>
+                        <td>{{ u.creado_en }}</td>
+                        <td class="text-center">
+                            {% if u.id != current_user.id %}
+                                {% if u.activo %}
+                                <a href="/usuarios/desactivar/{{ u.id }}"
+                                   class="btn-accion desactivar"
+                                   onclick="return confirm('¿Desactivar a {{ u.nombre }}?')">
+                                   Desactivar
+                                </a>
+                                {% else %}
+                                <a href="/usuarios/activar/{{ u.id }}"
+                                   class="btn-accion activar">
+                                   Activar
+                                </a>
+                                {% endif %}
+                            {% else %}
+                            <span style="color: #999; font-size: 13px;">Tu cuenta</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</body>
+</html>
